@@ -28,6 +28,7 @@ clone 后只需三步：
    |---|---|---|
    | `ADB_PATH` | 自动发现 | 环境变量 `ANDROID_RPA_ADB` 可覆盖 |
    | `DEVICE_SERIAL` | 空=自动 | 多台设备时填序列号，或用 `ANDROID_RPA_SERIAL` |
+   | `WIFI_DEVICES` | 空 | 无线 adb 设备列表，如 `["192.168.1.100:5555"]`，见下 |
    | `PACKAGES` | 已填常用 App | 换目标 App 改这里 |
    | `BOSS.greetings` | 通用示例 | 建议在 BOSS App 内设置「自动打招呼语」，脚本直接复用 |
    | `WECHAT.targets` | 空 | `{联系人备注: 消息}` |
@@ -42,6 +43,15 @@ clone 后只需三步：
 > **多设备 / adb 不在 PATH**：复制 `config_local.example.py` 为 `config_local.py`
 > 填入 `ADB_PATH` / `DEVICE_SERIAL`（该文件被 git 忽略，不会提交）；或用环境变量
 > `ANDROID_RPA_ADB` / `ANDROID_RPA_SERIAL`。
+
+> **无线 adb（免插线）**：手机与电脑连同一 Wi-Fi，两种方式任选：
+> - Android 11+「开发者选项 -> 无线调试」：端口随机，先在电脑上 `adb pair IP:配对端口` 配对
+>   （配对码在手机无线调试页面），之后把「IP:端口」填入 `WIFI_DEVICES`；
+> - 任意 Android 版本：插一次 USB 执行 `adb tcpip 5555` 后拔线，填 `手机IP` 即可
+>   （重启手机后失效，需重新执行）。
+>
+> 环境变量方式：`ANDROID_RPA_WIFI="192.168.1.100:5555,192.168.1.101"`（逗号分隔，端口可省略默认 5555）。
+> 任务启动时会自动 `adb connect` 列表里的设备，连接失败不影响 USB 设备。
 
 ## 手机端装了什么 & 如何卸载
 

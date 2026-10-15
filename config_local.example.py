@@ -6,3 +6,6 @@
 """
 # ADB_PATH = r"C:\platform-tools\adb.exe"
 # DEVICE_SERIAL = "YOUR_DEVICE_SERIAL"
+
+# 无线 adb 设备（手机与电脑同一局域网），支持多个：
+# WIFI_DEVICES = ["192.168.1.100:5555"]

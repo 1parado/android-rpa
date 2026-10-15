@@ -1,11 +1,35 @@
 # -*- coding: utf-8 -*-
-"""设备连接管理：adb 检测 + uiautomator2 会话"""
+"""设备连接管理：adb 检测 + 无线 adb connect + uiautomator2 会话"""
 import subprocess
 import sys
 
 from adbutils import adb
 
 import config
+
+DEFAULT_WIFI_PORT = 5555
+
+
+def _normalize_wifi_addr(addr: str) -> str:
+    """把 "192.168.1.100" 简写补全为 "192.168.1.100:5555" """
+    addr = addr.strip()
+    if ":" not in addr:
+        addr = f"{addr}:{DEFAULT_WIFI_PORT}"
+    return addr
+
+
+def connect_wifi_devices() -> None:
+    """按 config.WIFI_DEVICES 主动 adb connect 无线设备（失败不中断，只提示）"""
+    addrs = [_normalize_wifi_addr(a) for a in getattr(config, "WIFI_DEVICES", [])]
+    for addr in addrs:
+        try:
+            r = subprocess.run([config.ADB_PATH, "connect", addr],
+                               capture_output=True, timeout=10,
+                               text=True, encoding="utf-8", errors="replace")
+            msg = (r.stdout or r.stderr or "").strip()
+        except subprocess.TimeoutExpired:
+            msg = "超时（设备不在线或 IP/端口不对）"
+        print(f"[wifi] adb connect {addr} -> {msg}")
 
 
 def adb_devices() -> list:
@@ -22,11 +46,13 @@ def adb_devices() -> list:
 
 def connect(serial: str = None):
     """连接设备，返回 uiautomator2 设备对象"""
+    connect_wifi_devices()
     devices = adb_devices()
     if not devices:
         print("[X] 未检测到设备。请检查：")
-        print("    1. 手机已开启 开发者选项 -> USB 调试")
-        print("    2. 插线后手机弹窗点了『允许 USB 调试』")
+        print("    1. USB: 手机已开启 开发者选项 -> USB 调试，插线后点了『允许 USB 调试』")
+        print("    2. 无线: 手机与电脑同一局域网，config.WIFI_DEVICES 填手机 IP:端口")
+        print("       （Android 11+ 无线调试端口随机，需在开发者选项里查看；先配对）")
         print(f"    3. 手动验证: {config.ADB_PATH} devices")
         print("    4. 多台设备时: 设置环境变量 ANDROID_RPA_SERIAL 指定序列号")
         sys.exit(1)

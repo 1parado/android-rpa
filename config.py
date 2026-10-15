@@ -42,6 +42,14 @@ ADB_PATH = _find_adb()
 # （也可用环境变量 ANDROID_RPA_SERIAL 覆盖，无需改代码）
 DEVICE_SERIAL = os.environ.get("ANDROID_RPA_SERIAL", "")
 
+# 无线 adb 设备（"IP:端口" 列表），如 ["192.168.1.100:5555"]
+# 支持 "IP" 简写（默认端口 5555）。也支持环境变量 ANDROID_RPA_WIFI（逗号分隔）
+# 手机端：开发者选项 -> 无线调试（Android 11+ 记得先配对），
+# 或先插一次 USB 执行 `adb tcpip 5555` 后拔线。
+WIFI_DEVICES = [
+    s for s in os.environ.get("ANDROID_RPA_WIFI", "").replace("：", ":").split(",") if s.strip()
+]
+
 # 目标 App 包名：加新 App 只需在这里加一行 "别名": "包名"，
 # 然后在 apps/ 下参照 boss_zhipin.py 写一个 run(r) 流程模块即可
 # （包名可用 adb shell pm list packages | grep 关键词 查询）
@@ -92,6 +100,7 @@ WECHAT = {
 # 复制下面内容为 config_local.py 即可覆盖任意配置，适合放个人序列号/路径：
 #   ANDROID_RPA_ADB = r"C:\your\adb.exe"
 #   DEVICE_SERIAL = "YOUR_SERIAL"
+#   WIFI_DEVICES = ["192.168.1.100:5555"]   # 无线 adb 设备
 try:
     from config_local import *   # noqa: F401,F403
 except ImportError:
