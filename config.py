@@ -21,6 +21,8 @@ def _find_adb() -> str:
     if found:
         return found
     for p in (
+        # Android Studio / SDK Manager 在 Windows 的默认安装位置
+        os.path.expandvars(r"%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"),
         r"C:\platform-tools\adb.exe",
         r"C:\Android\platform-tools\adb.exe",
         r"C:\Users\Public\platform-tools\adb.exe",
