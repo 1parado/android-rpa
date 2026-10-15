@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 运行产物
+logs/
+INTERRUPT
+
+# 本地私有配置（个人 adb 路径 / 设备序列号）
+config_local.py
+
+# IDE
+.idea/
+.vscode/

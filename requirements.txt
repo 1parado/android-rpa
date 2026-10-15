@@ -1,0 +1,7 @@
+# Android RPA 依赖（Python 3.10+）
+uiautomator2>=3.0.0
+adbutils>=2.8.0
+pillow>=10.0.0
+
+# MCP Server（让 Agent 通过 MCP 控制手机；注意 2.x 改了 API，锁 1.x）
+mcp>=1.0,<2
