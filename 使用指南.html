@@ -512,9 +512,9 @@ footer p{font-size:13px;color:var(--muted);margin:4px 0}
       <div>
         <h4>拿到代码</h4>
         <p>装了 git 的话，在想存放项目的位置打开终端，执行（仓库地址以项目实际提供为准）：</p>
-        <pre><code>git clone &lt;你的仓库地址&gt; android-rpa
+        <pre><code>git clone https://github.com/1parado/android-rpa.git
 cd android-rpa</code></pre>
-        <p>不会 git 也完全没关系：在代码仓库页面点 <b>Code → Download ZIP</b>，下载后解压到任意位置，比如 <code>E:\android-rpa</code>。</p>
+        <p>不会 git 也完全没关系：打开 <a href="https://github.com/1parado/android-rpa" target="_blank">项目仓库页面</a>，点 <b>Code → Download ZIP</b>，下载后解压到任意位置，比如 <code>E:\android-rpa</code>。</p>
       </div>
     </div>
 
@@ -526,32 +526,46 @@ cd android-rpa</code></pre>
         <div class="pre-wrap">
           <pre><code id="prompt-code">我刚把 Android RPA 项目准备好，放在 E:\android-rpa（请替换成你的实际路径），
 手机已用 USB 线连上电脑，开发者模式和 USB 调试都已打开。
-请帮我完成下面的初始化，每一步先告诉我你要做什么：
-1. 进入项目目录，创建 Python 虚拟环境 .venv 并激活；
-2. 用 pip 安装 requirements.txt 里的全部依赖；
-3. 运行 adb devices 确认电脑能看到我的手机；
-   如果列表为空或显示 unauthorized，停下来告诉我在手机上怎么处理；
-4. 确认连接正常后，运行 python -m uiautomator2 init 给手机安装控制组件；
-5. 最后运行一次 python main.py --task boss 彩排模式（只检查不点击），
+请帮我完成下面的初始化，每一步先告诉我你要做什么，完成一步再进行下一步：
+0. 环境自检：确认 adb 可用（不在 PATH 时按 Android Studio 默认 SDK 位置
+   %LOCALAPPDATA%\Android\Sdk\platform-tools\ 查找，仍找不到就停下来问我，
+   不要擅自安装）；顺带确认 Python 版本不低于 3.10；
+1. 进入项目目录，创建 Python 虚拟环境 .venv（不激活也行，后续直接用
+   .venv 里的 python.exe 调用）；
+2. 用 pip 安装 requirements.txt 里的全部依赖，装完报告版本号；
+3. 运行 adb devices 确认电脑能看到我的手机：
+   - 显示 unauthorized → 停下来，让我在手机上勾选「一律允许」再点允许；
+   - 列表为空 → 停下来，按顺序引导我排查：USB 模式改为「传输文件」、
+     荣耀/华为机型打开「仅充电模式下允许 ADB 调试」、拔插线重新触发
+     授权弹窗、换数据线；
+4. 确认连接正常后，运行 python -m uiautomator2 init 给手机安装控制组件，
+   并做一次连接验证（读取设备信息）；
+5. 确认 BOSS直聘 App 已装在手机上（没装就先停下来提醒我安装并登录），
+   然后运行 python main.py --task boss 彩排模式（不加 --live，只检查不点击），
    把日志里有没有 [X] 或「未找到控件」汇报给我。
-过程中手机若弹出「允许 USB 调试」等确认框，先提醒我，等我点了允许再继续。</code></pre>
+6. 收尾：若 adb 路径特殊或有多台设备，按项目机制写进 config_local.py
+   （复制 config_local.example.py，覆盖 ADB_PATH / DEVICE_SERIAL 这类
+   最终变量）；清理过程中产生的临时脚本。
+过程中手机若弹出「允许 USB 调试」「安装应用」等确认框，先提醒我，
+等我点了允许再继续。</code></pre>
           <button type="button" class="pre-copy" id="prompt-copy" aria-label="复制提示词到剪贴板">复制提示词</button>
         </div>
         <p>助手每执行一条命令都会请求许可，逐条批准即可；它跑完之后，直接跳到第 4 步「对答案」检查成果。</p>
-        <div class="note"><span class="tag">务必</span>把提示词里的项目路径换成你自己的；发送前确认手机已插线、屏幕已解锁。</div>
+        <div class="note"><span class="tag">务必</span>把提示词里的项目路径换成你自己的；发送前确认手机已插线、屏幕已解锁，且 BOSS直聘已装好（第 5 步用得到）。</div>
       </div>
     </div>
 
     <div class="step">
       <div class="stepnum">3</div>
       <div>
-        <h4>手动路线：逐条执行下面 5 条命令</h4>
+        <h4>手动路线：逐条执行下面 6 条命令</h4>
         <p>在文件管理器里进入项目文件夹，在<b>地址栏输入 <code>cmd</code> 并回车</b>，就会在正确位置打开一个黑色终端窗口（macOS / Linux 用户在文件夹里右键打开终端即可）。然后一条一条复制、粘贴、回车，等上一条跑完再执行下一条：</p>
         <pre><code>python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 adb devices
-python -m uiautomator2 init</code></pre>
+python -m uiautomator2 init
+python main.py --task boss</code></pre>
         <p>每条命令在干什么：</p>
         <div class="table-wrap"><table>
           <thead><tr><th>命令</th><th>白话解释</th></tr></thead>
@@ -561,6 +575,7 @@ python -m uiautomator2 init</code></pre>
             <tr><td><code>pip install -r requirements.txt</code></td><td>按清单把所需的全部零件一次性装齐</td></tr>
             <tr><td><code>adb devices</code></td><td>点名：看看电脑能不能「看见」你的手机</td></tr>
             <tr><td><code>python -m uiautomator2 init</code></td><td>往手机里装一个叫 ATX 的小助手 App，它是电脑派驻手机的「传令兵」（免 root，可随时卸载，见第六章）</td></tr>
+            <tr><td><code>python main.py --task boss</code></td><td>彩排：脚本到手机上找一遍 BOSS直聘的按钮但什么都不点，确认整条链路畅通（需要手机上已装 BOSS直聘）</td></tr>
           </tbody>
         </table></div>
         <div class="note"><span class="tag">adb 是什么</span>adb（Android Debug Bridge）是谷歌官方的「手机对话工具」，装 Python 库时会自动带上，无需单独安装。</div>
@@ -591,14 +606,16 @@ python -m uiautomator2 init</code></pre>
               <text x="30" y="280" fill="#C9BFA8">(.venv) C:\android-rpa&gt; <tspan fill="#F0E8D8">python -m uiautomator2 init</tspan></text>
               <text x="30" y="304" fill="#8F8672">Install com.github.uiautomator ...</text>
               <text x="330" y="304" fill="#E2A183" font-weight="bold">[OK]</text>
+              <text x="30" y="334" fill="#C9BFA8">(.venv) C:\android-rpa&gt; <tspan fill="#F0E8D8">python main.py --task boss</tspan></text>
+              <text x="30" y="358" fill="#8F8672">[OK] 连接设备: **********  ← 彩排开始，只找控件不点击</text>
             </g>
           </svg>
           <figcaption>终点站的样子：序列号后面跟着高亮的 device 字样，u2 init 显示 [OK]。</figcaption>
         </figure>
         <div class="warn"><span class="tag">对不上？</span>
-          <b>显示空白</b>（只有 List of devices attached 一行）→ 手机弹窗没点「允许」，或线不能传数据，换线换口再试；华为机型检查「仅充电模式下允许 ADB 调试」。<br>
+          <b>显示空白</b>（只有 List of devices attached 一行）→ 手机弹窗没点「允许」，或线不能传数据，换线换口再试；荣耀/华为机型检查「仅充电模式下允许 ADB 调试」。若设备管理器里能看到 ADB 接口但 adb 始终扫不到，多半是荣耀/华为的驱动接管问题——装一个「华为手机助手（HiSuite）」让它自动补齐驱动，通常立竿见影。<br>
           <b>显示 <code>unauthorized</code></b> → 手机解锁屏幕，重新插一次，在弹窗点「允许」。<br>
-          <b>提示 <code>'adb' 不是内部或外部命令</code></b> → 回到手动路线第一步，确认终端是在项目文件夹里打开的，且 <code>pip install</code> 已经执行成功。
+          <b>提示 <code>'adb' 不是内部或外部命令</code></b> → adb 没装或不在 PATH。装了 Android Studio 的话它在 <code>%LOCALAPPDATA%\Android\Sdk\platform-tools\</code> 里；否则去 <a href="https://developer.android.com/tools/releases/platform-tools" target="_blank">官方下载</a> 解压，并在 <code>config_local.py</code> 里把 <code>ADB_PATH</code> 指向它。
         </div>
       </div>
     </div>
