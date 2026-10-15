@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android RPA 使用指南 · 让电脑替你操作手机</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF5EC;
+  --card:#FFFCF5;
+  --ink:#211D17;
+  --muted:#7A7264;
+  --accent:#B5502F;
+  --accent-deep:#8F3B20;
+  --accent-soft:#F2DFD4;
+  --line:#E4DBC9;
+  --code-bg:#26221B;
+  --code-fg:#F0E8D8;
+  --serif:'Noto Serif SC','Songti SC','STSong',Georgia,serif;
+  --display:'Playfair Display','Noto Serif SC',Georgia,serif;
+  --sans:-apple-system,'PingFang SC','Microsoft YaHei','Segoe UI',sans-serif;
+  --mono:'Cascadia Code',Consolas,'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.9;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent-soft)}
+.wrap{max-width:840px;margin:0 auto;padding:0 24px}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+a:hover{border-bottom-color:var(--accent)}
+hr{border:0;border-top:1px solid var(--line)}
+code{font-family:var(--mono);font-size:.86em;background:#F1E9D9;border:1px solid var(--line);border-radius:6px;padding:1px 7px;white-space:nowrap}
+pre{background:var(--code-bg);color:var(--code-fg);border-radius:12px;padding:20px 24px;overflow-x:auto;font-family:var(--mono);font-size:13.5px;line-height:1.85;margin:18px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+pre code{background:none;border:0;padding:0;color:inherit;white-space:pre}
+pre .c{color:#8F8672}
+pre .ok{color:#E2A183}
+pre .hl{color:#F5D9A8}
+/* 复制按钮 */
+.pre-wrap{position:relative;margin:18px 0}
+.pre-wrap pre{margin:0;padding-top:50px}
+.pre-copy{position:absolute;top:12px;right:14px;z-index:2;font-family:var(--sans);font-size:12px;letter-spacing:.08em;color:var(--code-fg);background:rgba(250,245,236,.08);border:1px solid rgba(250,245,236,.28);border-radius:999px;padding:5px 15px;cursor:pointer;transition:.18s}
+.pre-copy:hover{background:rgba(250,245,236,.2)}
+.pre-copy.copied{color:#BFE3B4;border-color:rgba(191,227,180,.55)}
+/* 自动注入的小号复制按钮（短命令块，悬浮右上角不占行） */
+pre.has-copy{position:relative;padding-top:46px}
+pre .pre-copy.mini{top:10px;right:12px;padding:3px 12px;font-size:11px}
+kbd{font-family:var(--mono);font-size:.82em;background:var(--card);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px}
+
+/* ---------- 顶部导航 ---------- */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,245,236,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:28px;height:54px}
+.brand{font-family:var(--display);font-style:italic;font-size:15px;color:var(--ink);white-space:nowrap}
+.brand b{color:var(--accent);font-weight:600}
+.nav{display:flex;gap:22px;margin-left:auto;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+.nav::-webkit-scrollbar{display:none}
+.nav a{font-size:12.5px;letter-spacing:.08em;color:var(--muted);border:0}
+.nav a:hover{color:var(--accent)}
+
+/* ---------- Hero ---------- */
+.hero{padding:92px 0 64px}
+.eyebrow{font-size:12px;letter-spacing:.28em;color:var(--accent);font-weight:500;text-transform:uppercase;margin-bottom:22px}
+.hero h1{font-family:var(--serif);font-weight:600;font-size:clamp(34px,6.4vw,58px);line-height:1.28;letter-spacing:.01em}
+.hero h1 em{font-family:var(--display);font-style:italic;color:var(--accent)}
+.hero .sub{margin-top:26px;font-size:17px;color:var(--muted);max-width:600px}
+.hero .meta{margin-top:30px;display:flex;flex-wrap:wrap;gap:10px 26px;font-size:13px;color:var(--muted)}
+.hero .meta span{display:inline-flex;align-items:center;gap:7px}
+.hero .meta i{width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block}
+
+/* ---------- 章节 ---------- */
+section{padding:74px 0}
+section + section{border-top:1px solid var(--line)}
+.ch-head{display:flex;align-items:baseline;gap:20px;margin-bottom:14px}
+.ch-num{font-family:var(--display);font-style:italic;font-size:46px;color:var(--accent);line-height:1;min-width:58px}
+.ch-head h2{font-family:var(--serif);font-weight:600;font-size:clamp(24px,4vw,31px);letter-spacing:.01em}
+.ch-eyebrow{font-size:11.5px;letter-spacing:.26em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.lead{font-size:16.5px;color:var(--muted);margin:10px 0 34px;max-width:640px}
+.lead b{color:var(--ink);font-weight:500}
+h3{font-family:var(--serif);font-weight:600;font-size:20px;margin:44px 0 16px}
+h3 .no{font-family:var(--display);font-style:italic;color:var(--accent);margin-right:10px}
+p{margin:14px 0}
+p b,li b{font-weight:600}
+
+/* ---------- 能力卡 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin:30px 0}
+.card-x{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 22px}
+.card-x .ic{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.card-x .ic svg{width:20px;height:20px;stroke:var(--accent-deep);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.card-x h4{font-family:var(--serif);font-size:16.5px;font-weight:600;margin-bottom:6px}
+.card-x p{font-size:13.5px;color:var(--muted);line-height:1.75;margin:0}
+
+/* ---------- 清单 ---------- */
+.checklist{list-style:none;margin:22px 0}
+.checklist li{display:flex;gap:14px;align-items:flex-start;padding:11px 0;border-bottom:1px dashed var(--line)}
+.checklist li:last-child{border-bottom:0}
+.checklist .tick{flex:0 0 22px;height:22px;margin-top:5px;border-radius:50%;background:var(--accent);color:var(--card);font-size:12px;display:flex;align-items:center;justify-content:center}
+.checklist b{font-weight:600}
+.checklist span.d{color:var(--muted);font-size:14px}
+
+/* ---------- 步骤 ---------- */
+.step{display:grid;grid-template-columns:52px 1fr;gap:18px;margin:38px 0}
+.stepnum{font-family:var(--display);font-style:italic;font-size:34px;color:var(--accent);line-height:1.15}
+.step h4{font-family:var(--serif);font-size:18.5px;font-weight:600;margin-bottom:8px;padding-top:4px}
+.step p{margin:10px 0}
+
+/* ---------- 插图 & 灯箱 ---------- */
+.phone-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:24px;margin:26px 0}
+figure.fig{cursor:zoom-in;position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px 14px;transition:transform .18s ease,box-shadow .18s ease}
+figure.fig:hover{transform:translateY(-3px);box-shadow:0 14px 34px -18px rgba(60,42,25,.35)}
+figure.fig svg{width:100%;height:auto;display:block}
+figure.fig figcaption{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted);text-align:center;line-height:1.6}
+.zoom-chip{position:absolute;top:12px;right:12px;font-size:11px;letter-spacing:.06em;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 11px;opacity:0;transition:opacity .18s;pointer-events:none}
+figure.fig:hover .zoom-chip{opacity:1}
+@media (hover:none){.zoom-chip{opacity:.9}}
+#lightbox{position:fixed;inset:0;z-index:100;background:rgba(26,21,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;opacity:0;pointer-events:none;transition:opacity .22s ease;padding:28px}
+#lightbox.open{opacity:1;pointer-events:auto}
+#lb-stage svg{filter:drop-shadow(0 18px 50px rgba(0,0,0,.5));border-radius:12px}
+#lb-cap{color:#E9DFCC;font-size:14.5px;text-align:center;max-width:640px;line-height:1.7}
+#lb-close{position:absolute;top:22px;right:26px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(233,223,204,.4);background:none;color:#E9DFCC;font-size:20px;cursor:pointer;transition:.18s}
+#lb-close:hover{background:rgba(233,223,204,.14)}
+#lb-prev,#lb-next{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:1px solid rgba(233,223,204,.35);background:none;color:#E9DFCC;font-size:18px;cursor:pointer;transition:.18s}
+#lb-prev:hover,#lb-next:hover{background:rgba(233,223,204,.14)}
+#lb-prev{left:18px}
+#lb-next{right:18px}
+@media (max-width:640px){#lb-prev{left:6px}#lb-next{right:6px}}
+
+/* ---------- 提示框 ---------- */
+.note,.warn{margin:22px 0;padding:16px 20px;border-radius:0 12px 12px 0;font-size:14.5px;line-height:1.8}
+.note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent)}
+.warn{background:#F6E7DE;border:1px solid #E5C6B4;border-left:3px solid var(--accent-deep)}
+.note b,.warn b{font-weight:600}
+.note .tag,.warn .tag{display:inline-block;font-size:11px;letter-spacing:.18em;color:var(--accent-deep);font-weight:600;margin-right:8px;text-transform:uppercase}
+
+/* ---------- 表格 ---------- */
+.table-wrap{overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+th{font-size:12px;letter-spacing:.14em;color:var(--muted);font-weight:500;text-align:left;padding:13px 18px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 18px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:500;white-space:nowrap}
+
+/* ---------- FAQ ---------- */
+details{border-bottom:1px solid var(--line);padding:4px 0}
+details summary{cursor:pointer;list-style:none;padding:16px 0;font-family:var(--serif);font-weight:600;font-size:16px;display:flex;align-items:baseline;gap:12px}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:'Q';font-family:var(--display);font-style:italic;color:var(--accent);font-size:18px}
+details p{padding:0 0 18px 30px;color:var(--muted);font-size:15px}
+details p b{color:var(--ink)}
+
+/* ---------- 页脚 ---------- */
+footer{border-top:1px solid var(--line);padding:52px 0 68px;text-align:center}
+footer .fin{font-family:var(--display);font-style:italic;font-size:22px;color:var(--accent);margin-bottom:12px}
+footer p{font-size:13px;color:var(--muted);margin:4px 0}
+@media (max-width:600px){
+  .step{grid-template-columns:40px 1fr;gap:12px}
+  .ch-num{min-width:46px;font-size:38px}
+  section{padding:56px 0}
+}
+@media print{.topbar,#lightbox,.zoom-chip,.pre-copy{display:none}figure.fig{cursor:auto}}
+</style>
+</head>
+<body>
+
+<!-- ============ 导航 ============ -->
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand">Android&nbsp;<b>RPA</b>&nbsp;·&nbsp;Mode d'emploi</div>
+    <nav class="nav">
+      <a href="#intro">认识它</a>
+      <a href="#prep">准备清单</a>
+      <a href="#ch1">① 开发者模式</a>
+      <a href="#ch2">② 电脑准备</a>
+      <a href="#ch3">③ 首次运行</a>
+      <a href="#ch4">④ 急停</a>
+      <a href="#ch5">⑤ AI 操控</a>
+      <a href="#ch6">⑥ 卸载</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+  </div>
+</div>
+
+<!-- ============ Hero ============ -->
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Android · RPA · 使用指南</div>
+    <h1>让电脑<br>替你<em>操作手机</em></h1>
+    <p class="sub">一份写给纯小白的说明书：从打开手机里的「开发者模式」开始，到自动打招呼、自动发消息，再到让 AI 助手直接帮你玩手机。全程免 root，图片皆可点击放大。</p>
+    <div class="meta">
+      <span><i></i>阅读约 15 分钟</span>
+      <span><i></i>免 Root · 官方通道</span>
+      <span><i></i>Windows / macOS / Linux</span>
+      <span><i></i>对应代码版本 2026-10-15</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 认识它 ============ -->
+<section id="intro">
+  <div class="wrap">
+    <div class="ch-eyebrow">Avant-propos · 序</div>
+    <div class="ch-head">
+      <div class="ch-num">§</div>
+      <h2>先弄懂三件事</h2>
+    </div>
+    <p class="lead">这套工具叫 <b>Android RPA</b>。RPA 的意思是「机器人流程自动化」——简单说，就是<b>让电脑里的一个小程序，替你在手机上点点点</b>。</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 640 360" role="img" aria-label="示意图：电脑通过 USB 数据线指挥手机自动操作">
+        <!-- 手机 -->
+        <rect x="118" y="78" width="116" height="220" rx="20" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+        <rect x="156" y="92" width="40" height="7" rx="3.5" fill="#211D17"/>
+        <!-- 屏幕里的聊天气泡 -->
+        <rect x="134" y="122" width="70" height="24" rx="11" fill="#F2DFD4"/>
+        <rect x="148" y="156" width="70" height="24" rx="11" fill="#FFFCF5" stroke="#211D17" stroke-width="1.6"/>
+        <rect x="134" y="190" width="52" height="24" rx="11" fill="#F2DFD4"/>
+        <line x1="146" y1="238" x2="206" y2="238" stroke="#E4DBC9" stroke-width="2"/>
+        <!-- 手指点击示意 -->
+        <circle cx="192" cy="168" r="14" fill="none" stroke="#B5502F" stroke-width="2.4"/>
+        <circle cx="192" cy="168" r="24" fill="none" stroke="#B5502F" stroke-width="1.6" opacity=".45"/>
+        <!-- 数据线（螺旋） -->
+        <path d="M176 300 C 150 348, 252 362, 264 316 C 272 286, 214 278, 222 310 C 231 344, 322 338, 356 262"
+              fill="none" stroke="#B5502F" stroke-width="5" stroke-linecap="round"/>
+        <!-- 笔记本电脑 -->
+        <rect x="392" y="74" width="196" height="128" rx="10" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+        <line x1="412" y1="104" x2="540" y2="104" stroke="#E4DBC9" stroke-width="5" stroke-linecap="round"/>
+        <line x1="412" y1="126" x2="526" y2="126" stroke="#E4DBC9" stroke-width="5" stroke-linecap="round"/>
+        <line x1="412" y1="148" x2="556" y2="148" stroke="#B5502F" stroke-width="5" stroke-linecap="round"/>
+        <path d="M368 202 L612 202 L634 230 L346 230 Z" fill="#FFFCF5" stroke="#211D17" stroke-width="3" stroke-linejoin="round"/>
+        <!-- 标注 -->
+        <line x1="176" y1="58" x2="176" y2="72" stroke="#7A7264" stroke-width="1.4"/>
+        <text x="176" y="46" text-anchor="middle" font-size="14" fill="#7A7264">手机 · 自动执行</text>
+        <line x1="490" y1="252" x2="490" y2="268" stroke="#7A7264" stroke-width="1.4" transform="rotate(180 490 260)"/>
+        <text x="490" y="286" text-anchor="middle" font-size="14" fill="#7A7264">电脑 · Python 脚本发号施令</text>
+        <text x="292" y="352" text-anchor="middle" font-size="13" fill="#B5502F">USB 数据线</text>
+        <!-- 点缀 -->
+        <path d="M300 96 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 z" fill="#B5502F" opacity=".7"/>
+        <path d="M580 60 l2.4 6.4 6.4 2.4 -6.4 2.4 -2.4 6.4 -2.4 -6.4 -6.4 -2.4 6.4 -2.4 z" fill="#B5502F" opacity=".4"/>
+      </svg>
+      <figcaption>整体思路：电脑里跑着 Python 脚本，通过一根 USB 数据线指挥手机自动点击、输入、滑动。</figcaption>
+    </figure>
+
+    <div class="cards">
+      <div class="card-x">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><line x1="8" y1="10.5" x2="16" y2="10.5"/></svg></div>
+        <h4>BOSS直聘自动打招呼</h4>
+        <p>你在 App 里筛选好职位，脚本按列表从上往下逐个点开、点「立即沟通」、打招呼，再返回下一个。</p>
+      </div>
+      <div class="card-x">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12l18-8-6 18-3.5-7z"/><path d="M11.5 15L21 4"/></svg></div>
+        <h4>微信自动发消息</h4>
+        <p>按你在配置里写好的名单，自动搜索联系人、输入消息、点发送，一条不漏。</p>
+      </div>
+      <div class="card-x">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/></svg></div>
+        <h4>让 AI 直接操控手机</h4>
+        <p>内置 MCP 服务：AI 助手能实时看你的手机屏幕、帮你点按输入。对它说句话就行。</p>
+      </div>
+    </div>
+
+    <div class="note"><span class="tag">安心</span><b>它安全吗？</b>不破解、不 root、不改手机系统，走的是安卓官方留给开发者的「USB 调试」通道。脚本默认处于<b>彩排模式</b>——只找按钮、不真点，何时让它动手由你决定；任何时候都能一键急停（见第四章）。</div>
+  </div>
+</section>
+
+<!-- ============ 准备清单 ============ -->
+<section id="prep">
+  <div class="wrap">
+    <div class="ch-eyebrow">Checklist · 清单</div>
+    <div class="ch-head">
+      <div class="ch-num">0</div>
+      <h2>开始之前，备齐这五样</h2>
+    </div>
+    <p class="lead">花两分钟对照一下，都在的话就可以直接进入第一章。</p>
+    <ul class="checklist">
+      <li><span class="tick">✓</span><div><b>一台安卓手机</b>（华为、荣耀、小米、红米、OPPO、vivo、一加、三星都可以；iPhone 不行）</div></li>
+      <li><span class="tick">✓</span><div><b>一根能传数据的 USB 线</b><div class="d">注意：很多随手拿的线只能充电、不能传数据。插上电脑后手机毫无反应，十有八九是线的问题。</div></div></li>
+      <li><span class="tick">✓</span><div><b>一台电脑</b>（Windows 优先，macOS / Linux 也支持）</div></li>
+      <li><span class="tick">✓</span><div><b>Python 3.10 或更新版本</b><div class="d">打开终端（Windows 按 <kbd>Win</kbd>+<kbd>R</kbd> 输入 <code>cmd</code> 回车）输入 <code>python --version</code>。显示出 <code>3.10</code> 以上即可；没有就去 <a href="https://www.python.org/downloads/" target="_blank">python.org</a> 下载，安装时务必勾选「Add Python to PATH」。</div></div></li>
+      <li><span class="tick">✓</span><div><b>十来分钟不被打扰的时间</b></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 第一章 开发者模式 ============ -->
+<section id="ch1">
+  <div class="wrap">
+    <div class="ch-eyebrow">Chapitre I · 开发者模式</div>
+    <div class="ch-head">
+      <div class="ch-num">I</div>
+      <h2>打开手机的开发者模式</h2>
+    </div>
+    <p class="lead">安卓手机出厂时是「锁着门」的：不允许外部程序指挥它点这里、按那里。<b>开发者模式</b>是谷歌官方留在手机里的工程开关，打开里面的「USB 调试」，电脑才被允许和手机对话。这不是越狱，不影响保修，随时可以关掉。</p>
+
+    <div class="step">
+      <div class="stepnum">1</div>
+      <div>
+        <h4>找到「版本号」藏在哪</h4>
+        <p>打开手机的<b>「设置」</b>，滑到最底部，点进<b>「关于手机」</b>。不同品牌的入口略有差异：</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>品牌</th><th>入口路径</th><th>要连点的那个选项</th></tr></thead>
+          <tbody>
+            <tr><td>华为 / 荣耀</td><td>设置 → 关于手机</td><td>版本号</td></tr>
+            <tr><td>小米 / 红米</td><td>设置 → 我的设备 → 全部参数</td><td>OS 版本</td></tr>
+            <tr><td>OPPO / 一加</td><td>设置 → 关于本机</td><td>版本号</td></tr>
+            <tr><td>vivo</td><td>设置 → 我的设备 → 更多参数</td><td>软件版本号</td></tr>
+            <tr><td>三星</td><td>设置 → 关于手机 → 软件信息</td><td>编译编号</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="phone-grid">
+      <figure class="fig">
+        <svg viewBox="0 0 300 600" role="img" aria-label="手机截图示意：设置列表中的关于手机">
+          <rect x="10" y="10" width="280" height="580" rx="36" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+          <rect x="122" y="28" width="56" height="9" rx="4.5" fill="#211D17"/>
+          <text x="34" y="60" font-size="12" fill="#7A7264">9:41</text>
+          <rect x="242" y="50" width="20" height="11" rx="3" fill="none" stroke="#7A7264" stroke-width="1.6"/>
+          <rect x="244" y="52" width="13" height="7" rx="1.5" fill="#7A7264"/>
+          <line x1="58" y1="96" x2="42" y2="112" stroke="#211D17" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="42" y1="112" x2="58" y2="128" stroke="#211D17" stroke-width="2.2" stroke-linecap="round"/>
+          <text x="150" y="121" text-anchor="middle" font-size="17" font-weight="600" fill="#211D17">设置</text>
+          <g font-size="14.5" fill="#211D17">
+            <text x="30" y="172">WLAN</text><text x="262" y="172" fill="#C9BFA8">›</text>
+            <line x1="24" y1="196" x2="276" y2="196" stroke="#EDE5D4" stroke-width="1.4"/>
+            <text x="30" y="228">蓝牙</text><text x="262" y="228" fill="#C9BFA8">›</text>
+            <line x1="24" y1="252" x2="276" y2="252" stroke="#EDE5D4" stroke-width="1.4"/>
+            <text x="30" y="284">移动网络</text><text x="262" y="284" fill="#C9BFA8">›</text>
+            <line x1="24" y1="308" x2="276" y2="308" stroke="#EDE5D4" stroke-width="1.4"/>
+            <text x="30" y="340">显示与亮度</text><text x="262" y="340" fill="#C9BFA8">›</text>
+            <line x1="24" y1="364" x2="276" y2="364" stroke="#EDE5D4" stroke-width="1.4"/>
+            <text x="30" y="396">声音和振动</text><text x="262" y="396" fill="#C9BFA8">›</text>
+          </g>
+          <rect x="18" y="424" width="264" height="48" rx="12" fill="#F2DFD4"/>
+          <text x="30" y="454" font-size="14.5" font-weight="600" fill="#8F3B20">关于手机</text>
+          <text x="262" y="454" text-anchor="end" font-size="15" fill="#B5502F">›</text>
+          <text x="150" y="556" text-anchor="middle" font-size="12.5" fill="#7A7264">第 1 步 · 滑到最底部，点「关于手机」</text>
+          <rect x="130" y="580" width="40" height="4" rx="2" fill="#211D17"/>
+        </svg>
+        <figcaption>设置列表拉到最底部，「关于手机」就在这里。</figcaption>
+      </figure>
+
+      <figure class="fig">
+        <svg viewBox="0 0 300 600" role="img" aria-label="手机截图示意：关于手机页面，连点版本号七次">
+          <rect x="10" y="10" width="280" height="580" rx="36" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+          <rect x="122" y="28" width="56" height="9" rx="4.5" fill="#211D17"/>
+          <text x="34" y="60" font-size="12" fill="#7A7264">9:41</text>
+          <line x1="58" y1="96" x2="42" y2="112" stroke="#211D17" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="42" y1="112" x2="58" y2="128" stroke="#211D17" stroke-width="2.2" stroke-linecap="round"/>
+          <text x="150" y="121" text-anchor="middle" font-size="17" font-weight="600" fill="#211D17">关于手机</text>
+          <g font-size="14.5" fill="#211D17">
+            <text x="30" y="172">设备名称</text>
+            <text x="270" y="172" text-anchor="end" fill="#7A7264" font-size="13">我的手机</text>
+            <line x1="24" y1="196" x2="276" y2="196" stroke="#EDE5D4" stroke-width="1.4"/>
+            <text x="30" y="228">型号</text>
+            <text x="270" y="228" text-anchor="end" fill="#7A7264" font-size="13">Android 手机</text>
+            <line x1="24" y1="252" x2="276" y2="252" stroke="#EDE5D4" stroke-width="1.4"/>
+            <text x="30" y="284">Android 版本</text>
+            <text x="270" y="284" text-anchor="end" fill="#7A7264" font-size="13">12</text>
+            <line x1="24" y1="308" x2="276" y2="308" stroke="#EDE5D4" stroke-width="1.4"/>
+          </g>
+          <rect x="18" y="332" width="264" height="48" rx="12" fill="#F2DFD4"/>
+          <text x="30" y="362" font-size="14.5" font-weight="600" fill="#8F3B20">版本号</text>
+          <text x="270" y="362" text-anchor="end" fill="#7A7264" font-size="13">Android 12.0.1</text>
+          <!-- 连点涟漪 -->
+          <circle cx="150" cy="356" r="16" fill="none" stroke="#B5502F" stroke-width="2.6"/>
+          <circle cx="150" cy="356" r="30" fill="none" stroke="#B5502F" stroke-width="1.8" opacity=".5"/>
+          <circle cx="150" cy="356" r="44" fill="none" stroke="#B5502F" stroke-width="1.2" opacity=".25"/>
+          <text x="150" y="440" text-anchor="middle" font-size="14" font-weight="600" fill="#B5502F">连续快速点击 7 次</text>
+          <rect x="45" y="474" width="210" height="40" rx="20" fill="#211D17"/>
+          <text x="150" y="500" text-anchor="middle" font-size="13" fill="#F0E8D8">再点 4 次，即可进入开发者模式</text>
+          <text x="150" y="556" text-anchor="middle" font-size="12.5" fill="#7A7264">第 2 步 · 像抢红包一样连点版本号</text>
+          <rect x="130" y="580" width="40" height="4" rx="2" fill="#211D17"/>
+        </svg>
+        <figcaption>对「版本号」连续快速点击 7 次，系统会倒数提示。</figcaption>
+      </figure>
+    </div>
+
+    <div class="step">
+      <div class="stepnum">2</div>
+      <div>
+        <h4>连点 7 次「版本号」</h4>
+        <p>用手指<b>连续快速地点击 7 次</b>（像抢红包那样戳）。点到第 3、4 次时，屏幕底部会弹出「<b>还剩 X 次</b>」的倒数提示；点满后提示「<b>您已处于开发者模式</b>」就成功了。如果手机设了锁屏密码，中途可能要求你输一次密码，照输即可。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="stepnum">3</div>
+      <div>
+        <h4>找回新出现的「开发人员选项」</h4>
+        <p>返回设置首页，「开发人员选项」不会自己冒出来，它藏在不同的地方：</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>品牌</th><th>开发者选项的位置</th></tr></thead>
+          <tbody>
+            <tr><td>华为 / 荣耀</td><td>设置 → 系统和更新 → 开发人员选项</td></tr>
+            <tr><td>小米 / 红米</td><td>设置 → 更多设置 → 开发者选项</td></tr>
+            <tr><td>OPPO / vivo</td><td>设置 → 系统管理 / 其他设置 → 开发者选项</td></tr>
+            <tr><td>三星</td><td>设置 → 开发者选项（通常在列表末尾）</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><span class="tag">偷懒</span>实在找不到？在设置顶部的<b>搜索栏</b>里直接搜「开发者」三个字，一步到位。</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="stepnum">4</div>
+      <div>
+        <h4>打开「USB 调试」开关</h4>
+        <p>进入开发人员选项后，往下滚动找到<b>「USB 调试」</b>，把开关打开。弹出提示框时点「确定 / 允许」。</p>
+        <div class="note"><span class="tag">华为专属</span>部分华为 / 荣耀机型还要<b>多开一个</b>：「仅充电」模式下允许 ADB 调试，就在 USB 调试的下面几行。找不到这行就说明你的机型不需要，跳过即可。</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="stepnum">5</div>
+      <div>
+        <h4>插线，并在手机上点「允许」</h4>
+        <p>用数据线把手机插到电脑上，手机会弹窗问「<b>是否允许 USB 调试？</b>」——先勾选「<b>一律允许使用这台计算机进行调试</b>」，再点「<b>允许</b>」。这样以后每次插线都不会再问。</p>
+      </div>
+    </div>
+
+    <div class="phone-grid">
+      <figure class="fig">
+        <svg viewBox="0 0 300 600" role="img" aria-label="手机截图示意：开发人员选项中的USB调试开关">
+          <rect x="10" y="10" width="280" height="580" rx="36" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+          <rect x="122" y="28" width="56" height="9" rx="4.5" fill="#211D17"/>
+          <text x="34" y="60" font-size="12" fill="#7A7264">9:41</text>
+          <line x1="58" y1="96" x2="42" y2="112" stroke="#211D17" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="42" y1="112" x2="58" y2="128" stroke="#211D17" stroke-width="2.2" stroke-linecap="round"/>
+          <text x="150" y="121" text-anchor="middle" font-size="17" font-weight="600" fill="#211D17">开发人员选项</text>
+          <text x="30" y="176" font-size="12" letter-spacing="3" fill="#7A7264">调试</text>
+          <!-- USB 调试行 -->
+          <rect x="18" y="192" width="264" height="56" rx="12" fill="#F2DFD4"/>
+          <text x="30" y="216" font-size="14.5" font-weight="600" fill="#8F3B20">USB 调试</text>
+          <text x="30" y="236" font-size="11.5" fill="#B5502F">允许电脑通过 USB 指挥手机</text>
+          <rect x="224" y="206" width="46" height="27" rx="13.5" fill="#B5502F"/>
+          <circle cx="257" cy="219.5" r="10" fill="#FFFCF5"/>
+          <!-- 华为附加 -->
+          <rect x="18" y="258" width="264" height="56" rx="12" fill="none" stroke="#B5502F" stroke-width="1.6" stroke-dasharray="5 4"/>
+          <text x="30" y="282" font-size="13.5" fill="#211D17">「仅充电」模式下允许 ADB 调试</text>
+          <text x="30" y="300" font-size="11" fill="#7A7264">华为 / 荣耀机型需要</text>
+          <rect x="224" y="272" width="46" height="27" rx="13.5" fill="#B5502F"/>
+          <circle cx="257" cy="285.5" r="10" fill="#FFFCF5"/>
+          <!-- 其他关闭的 -->
+          <text x="30" y="356" font-size="13.5" fill="#211D17">无线调试</text>
+          <rect x="224" y="340" width="46" height="27" rx="13.5" fill="#E7DFCE"/>
+          <circle cx="237" cy="353.5" r="10" fill="#FFFCF5"/>
+          <line x1="24" y1="384" x2="276" y2="384" stroke="#EDE5D4" stroke-width="1.4"/>
+          <text x="30" y="416" font-size="13.5" fill="#211D17">模拟点击授权</text>
+          <rect x="224" y="400" width="46" height="27" rx="13.5" fill="#E7DFCE"/>
+          <circle cx="237" cy="413.5" r="10" fill="#FFFCF5"/>
+          <!-- 指示箭头 -->
+          <path d="M150 520 C 150 480, 120 440, 96 254" fill="none" stroke="#B5502F" stroke-width="1.8" stroke-dasharray="4 4"/>
+          <path d="M100 264 L 95 250 L 108 256 Z" fill="#B5502F"/>
+          <text x="150" y="542" text-anchor="middle" font-size="13.5" font-weight="600" fill="#B5502F">先打开这个开关</text>
+          <text x="150" y="566" text-anchor="middle" font-size="12.5" fill="#7A7264">第 3-4 步 · 找到入口并打开 USB 调试</text>
+          <rect x="130" y="580" width="40" height="4" rx="2" fill="#211D17"/>
+        </svg>
+        <figcaption>开发人员选项里的「USB 调试」；华为机型多开一行虚线框里的开关。</figcaption>
+      </figure>
+
+      <figure class="fig">
+        <svg viewBox="0 0 300 600" role="img" aria-label="手机截图示意：允许USB调试授权弹窗">
+          <rect x="10" y="10" width="280" height="580" rx="36" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+          <rect x="122" y="28" width="56" height="9" rx="4.5" fill="#211D17"/>
+          <text x="34" y="60" font-size="12" fill="#7A7264">9:41</text>
+          <!-- 背景变暗的设置列表 -->
+          <g opacity=".38">
+            <text x="30" y="150" font-size="14" fill="#211D17">USB 调试</text>
+            <line x1="24" y1="176" x2="276" y2="176" stroke="#C9BFA8" stroke-width="1.4"/>
+            <text x="30" y="210" font-size="14" fill="#211D17">无线调试</text>
+            <line x1="24" y1="236" x2="276" y2="236" stroke="#C9BFA8" stroke-width="1.4"/>
+            <text x="30" y="270" font-size="14" fill="#211D17">模拟位置</text>
+          </g>
+          <rect x="16" y="90" width="268" height="470" rx="30" fill="#211D17" opacity=".18"/>
+          <!-- 弹窗 -->
+          <rect x="30" y="200" width="240" height="196" rx="18" fill="#FFFCF5" stroke="#211D17" stroke-width="2.4"/>
+          <text x="150" y="242" text-anchor="middle" font-size="16" font-weight="600" fill="#211D17">允许 USB 调试吗？</text>
+          <text x="52" y="272" font-size="11.5" fill="#7A7264">这台电脑将通过 USB 获得控制</text>
+          <text x="52" y="290" font-size="11.5" fill="#7A7264">您手机的权限。</text>
+          <rect x="52" y="312" width="15" height="15" rx="3" fill="#B5502F"/>
+          <path d="M55.5 319.5 l3 3.4 5.6 -6.4" stroke="#FFFCF5" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="75" y="324" font-size="11.5" fill="#211D17">一律允许使用这台计算机进行调试</text>
+          <line x1="30" y1="348" x2="270" y2="348" stroke="#EDE5D4" stroke-width="1.4"/>
+          <text x="196" y="378" text-anchor="middle" font-size="14.5" fill="#7A7264">取消</text>
+          <text x="242" y="378" text-anchor="middle" font-size="14.5" font-weight="600" fill="#B5502F">允许</text>
+          <text x="150" y="472" text-anchor="middle" font-size="14" font-weight="600" fill="#B5502F">勾选「一律允许」再点允许</text>
+          <text x="150" y="540" text-anchor="middle" font-size="12.5" fill="#7A7264">第 5 步 · 插线后的授权弹窗</text>
+          <rect x="130" y="580" width="40" height="4" rx="2" fill="#211D17"/>
+        </svg>
+        <figcaption>插线后手机会弹窗授权——务必勾选「一律允许」。</figcaption>
+      </figure>
+    </div>
+
+    <div class="warn"><span class="tag">检查点</span><b>第一章完成标志：</b>手机插着线、屏幕上「USB 调试」开关是开着的、并且刚插线时点过「允许」。做到这三点，就可以进入下一章了。</div>
+  </div>
+</section>
+
+<!-- ============ 第二章 电脑准备 ============ -->
+<section id="ch2">
+  <div class="wrap">
+    <div class="ch-eyebrow">Chapitre II · 电脑准备</div>
+    <div class="ch-head">
+      <div class="ch-num">II</div>
+      <h2>把电脑武装好</h2>
+    </div>
+    <p class="lead">接下来在电脑上装依赖、连手机、再给手机装一个「传令兵」。两条路线任选其一：<b>省力路线</b>——把一段提示词交给 AI 助手，让它全程替你代劳；<b>手动路线</b>——自己逐条复制粘贴命令。全程不写一行代码。</p>
+
+    <div class="step">
+      <div class="stepnum">1</div>
+      <div>
+        <h4>拿到代码</h4>
+        <p>装了 git 的话，在想存放项目的位置打开终端，执行（仓库地址以项目实际提供为准）：</p>
+        <pre><code>git clone &lt;你的仓库地址&gt; android-rpa
+cd android-rpa</code></pre>
+        <p>不会 git 也完全没关系：在代码仓库页面点 <b>Code → Download ZIP</b>，下载后解压到任意位置，比如 <code>E:\android-rpa</code>。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="stepnum">2</div>
+      <div>
+        <h4>省力路线：把这段提示词交给 AI 助手</h4>
+        <p>电脑上装了 AI 编程助手（Claude Code、Cursor 等都可以）？那连命令都不用敲——<b>把下面这段提示词原样粘贴给它</b>，装环境、连手机、装组件，它全程替你代劳：</p>
+        <div class="pre-wrap">
+          <pre><code id="prompt-code">我刚把 Android RPA 项目准备好，放在 E:\android-rpa（请替换成你的实际路径），
+手机已用 USB 线连上电脑，开发者模式和 USB 调试都已打开。
+请帮我完成下面的初始化，每一步先告诉我你要做什么：
+1. 进入项目目录，创建 Python 虚拟环境 .venv 并激活；
+2. 用 pip 安装 requirements.txt 里的全部依赖；
+3. 运行 adb devices 确认电脑能看到我的手机；
+   如果列表为空或显示 unauthorized，停下来告诉我在手机上怎么处理；
+4. 确认连接正常后，运行 python -m uiautomator2 init 给手机安装控制组件；
+5. 最后运行一次 python main.py --task boss 彩排模式（只检查不点击），
+   把日志里有没有 [X] 或「未找到控件」汇报给我。
+过程中手机若弹出「允许 USB 调试」等确认框，先提醒我，等我点了允许再继续。</code></pre>
+          <button type="button" class="pre-copy" id="prompt-copy" aria-label="复制提示词到剪贴板">复制提示词</button>
+        </div>
+        <p>助手每执行一条命令都会请求许可，逐条批准即可；它跑完之后，直接跳到第 4 步「对答案」检查成果。</p>
+        <div class="note"><span class="tag">务必</span>把提示词里的项目路径换成你自己的；发送前确认手机已插线、屏幕已解锁。</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="stepnum">3</div>
+      <div>
+        <h4>手动路线：逐条执行下面 5 条命令</h4>
+        <p>在文件管理器里进入项目文件夹，在<b>地址栏输入 <code>cmd</code> 并回车</b>，就会在正确位置打开一个黑色终端窗口（macOS / Linux 用户在文件夹里右键打开终端即可）。然后一条一条复制、粘贴、回车，等上一条跑完再执行下一条：</p>
+        <pre><code>python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+adb devices
+python -m uiautomator2 init</code></pre>
+        <p>每条命令在干什么：</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>命令</th><th>白话解释</th></tr></thead>
+          <tbody>
+            <tr><td><code>python -m venv .venv</code></td><td>在项目里盖一间「独立厨房」，之后装的东西只影响本项目，不弄脏电脑</td></tr>
+            <tr><td><code>.venv\Scripts\activate</code></td><td>走进这间厨房（macOS / Linux 用 <code>source .venv/bin/activate</code>，成功后命令行前面会出现 <code>(.venv)</code> 字样）</td></tr>
+            <tr><td><code>pip install -r requirements.txt</code></td><td>按清单把所需的全部零件一次性装齐</td></tr>
+            <tr><td><code>adb devices</code></td><td>点名：看看电脑能不能「看见」你的手机</td></tr>
+            <tr><td><code>python -m uiautomator2 init</code></td><td>往手机里装一个叫 ATX 的小助手 App，它是电脑派驻手机的「传令兵」（免 root，可随时卸载，见第六章）</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><span class="tag">adb 是什么</span>adb（Android Debug Bridge）是谷歌官方的「手机对话工具」，装 Python 库时会自动带上，无需单独安装。</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="stepnum">4</div>
+      <div>
+        <h4>对答案：终端应该长这样</h4>
+        <p><code>adb devices</code> 执行后，如果看到一串序列号和 <code>device</code> 字样，说明电脑已经成功认到手机：</p>
+        <figure class="fig">
+          <svg viewBox="0 0 560 350" role="img" aria-label="终端窗口示意：五条命令的执行结果">
+            <rect x="8" y="8" width="544" height="334" rx="14" fill="#26221B" stroke="#211D17" stroke-width="3"/>
+            <circle cx="34" cy="34" r="6" fill="#8F8672"/>
+            <circle cx="56" cy="34" r="6" fill="#B5502F"/>
+            <circle cx="78" cy="34" r="6" fill="#8F8672" opacity=".5"/>
+            <text x="290" y="39" text-anchor="middle" font-size="12" fill="#8F8672">命令提示符 — android-rpa</text>
+            <line x1="8" y1="56" x2="552" y2="56" stroke="#3A342A" stroke-width="1.4"/>
+            <g font-family="Consolas,'Courier New',monospace" font-size="13">
+              <text x="30" y="88" fill="#C9BFA8">C:\android-rpa&gt; <tspan fill="#F0E8D8">python -m venv .venv</tspan></text>
+              <text x="30" y="118" fill="#C9BFA8">C:\android-rpa&gt; <tspan fill="#F0E8D8">.venv\Scripts\activate</tspan></text>
+              <text x="30" y="148" fill="#C9BFA8">(.venv) C:\android-rpa&gt; <tspan fill="#F0E8D8">pip install -r requirements.txt</tspan></text>
+              <text x="30" y="172" fill="#8F8672">Successfully installed uiautomator2-3.2.0 adbutils-2.8.1 ...</text>
+              <text x="30" y="202" fill="#C9BFA8">(.venv) C:\android-rpa&gt; <tspan fill="#F0E8D8">adb devices</tspan></text>
+              <text x="30" y="226" fill="#8F8672">List of devices attached</text>
+              <text x="30" y="250" fill="#F0E8D8">**********            <tspan fill="#E2A183" font-weight="bold">device</tspan></text>
+              <text x="30" y="280" fill="#C9BFA8">(.venv) C:\android-rpa&gt; <tspan fill="#F0E8D8">python -m uiautomator2 init</tspan></text>
+              <text x="30" y="304" fill="#8F8672">Install com.github.uiautomator ...</text>
+              <text x="330" y="304" fill="#E2A183" font-weight="bold">[OK]</text>
+            </g>
+          </svg>
+          <figcaption>终点站的样子：序列号后面跟着高亮的 device 字样，u2 init 显示 [OK]。</figcaption>
+        </figure>
+        <div class="warn"><span class="tag">对不上？</span>
+          <b>显示空白</b>（只有 List of devices attached 一行）→ 手机弹窗没点「允许」，或线不能传数据，换线换口再试；华为机型检查「仅充电模式下允许 ADB 调试」。<br>
+          <b>显示 <code>unauthorized</code></b> → 手机解锁屏幕，重新插一次，在弹窗点「允许」。<br>
+          <b>提示 <code>'adb' 不是内部或外部命令</code></b> → 回到手动路线第一步，确认终端是在项目文件夹里打开的，且 <code>pip install</code> 已经执行成功。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 第三章 首次运行 ============ -->
+<section id="ch3">
+  <div class="wrap">
+    <div class="ch-eyebrow">Chapitre III · 首次运行</div>
+    <div class="ch-head">
+      <div class="ch-num">III</div>
+      <h2>第一次跑起来</h2>
+    </div>
+    <p class="lead">先认识一个重要概念：<b>彩排模式（dry-run）</b>——像演出前的走位，脚本把每一步「我找到了这个按钮，本该点它」都写进日志给你看，但屏幕上<b>什么都不动</b>。所有任务都默认彩排，确认无误后加 <code>--live</code> 才真干。</p>
+
+    <h3><span class="no">A.</span>BOSS直聘自动打招呼</h3>
+    <div class="step">
+      <div class="stepnum">1</div>
+      <div>
+        <h4>先在手机上手动做两件小事</h4>
+        <p>① 打开 BOSS直聘 App，<b>搜索并筛选好你想要的职位</b>，停在职位列表页——脚本会按屏幕上的顺序从上往下投递，所以筛得越准，投得越准。<br>② 设置好打招呼语：<b>我的 → 右上角设置 → 消息设置 → 打招呼语</b>。设置后脚本点「立即沟通」时会自动带上这句话，全程无需输入文字。</p>
+        <div class="phone-grid">
+          <figure class="fig">
+            <svg viewBox="0 0 300 600" role="img" aria-label="手机截图示意：BOSS直聘职位列表页，筛选好职位等待投递">
+              <rect x="10" y="10" width="280" height="580" rx="36" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+              <rect x="122" y="28" width="56" height="9" rx="4.5" fill="#211D17"/>
+              <text x="34" y="60" font-size="12" fill="#7A7264">9:41</text>
+              <text x="150" y="121" text-anchor="middle" font-size="17" font-weight="600" fill="#211D17">职位</text>
+              <text x="270" y="121" text-anchor="end" font-size="12" fill="#7A7264">北京 · 筛选 ✓</text>
+              <!-- 职位卡 1 -->
+              <rect x="18" y="142" width="264" height="118" rx="14" fill="#F2DFD4"/>
+              <text x="32" y="172" font-size="14.5" font-weight="600" fill="#211D17">Java 开发工程师</text>
+              <text x="270" y="172" text-anchor="end" font-size="14" font-weight="600" fill="#B5502F">15-25K·14薪</text>
+              <text x="32" y="198" font-size="12" fill="#7A7264">某科技公司 · 3-5年 · 本科</text>
+              <line x1="32" y1="214" x2="268" y2="214" stroke="#E0D0BC" stroke-width="1.2"/>
+              <circle cx="38" cy="236" r="9" fill="#E0D0BC"/>
+              <text x="52" y="240" font-size="11.5" fill="#7A7264">张女士 · HR</text>
+              <rect x="196" y="224" width="72" height="25" rx="12.5" fill="#211D17"/>
+              <text x="232" y="241" text-anchor="middle" font-size="11.5" fill="#F0E8D8">立即沟通</text>
+              <!-- 职位卡 2 -->
+              <rect x="18" y="272" width="264" height="118" rx="14" fill="#FFFCF5" stroke="#E4DBC9" stroke-width="1.4"/>
+              <text x="32" y="302" font-size="14.5" font-weight="600" fill="#211D17">AI 应用工程师</text>
+              <text x="270" y="302" text-anchor="end" font-size="14" font-weight="600" fill="#B5502F">20-35K·15薪</text>
+              <text x="32" y="328" font-size="12" fill="#7A7264">某智能公司 · 1-3年 · 本科</text>
+              <line x1="32" y1="344" x2="268" y2="344" stroke="#EDE5D4" stroke-width="1.2"/>
+              <circle cx="38" cy="366" r="9" fill="#E7DFCE"/>
+              <text x="52" y="370" font-size="11.5" fill="#7A7264">李先生 · HR</text>
+              <rect x="196" y="354" width="72" height="25" rx="12.5" fill="#FFFCF5" stroke="#211D17" stroke-width="1.6"/>
+              <text x="232" y="371" text-anchor="middle" font-size="11.5" fill="#211D17">立即沟通</text>
+              <!-- 职位卡 3 -->
+              <rect x="18" y="402" width="264" height="118" rx="14" fill="#FFFCF5" stroke="#E4DBC9" stroke-width="1.4"/>
+              <text x="32" y="432" font-size="14.5" font-weight="600" fill="#211D17">Python 后端</text>
+              <text x="270" y="432" text-anchor="end" font-size="14" font-weight="600" fill="#B5502F">18-28K·14薪</text>
+              <text x="32" y="458" font-size="12" fill="#7A7264">某软件公司 · 3-5年 · 大专</text>
+              <line x1="32" y1="474" x2="268" y2="474" stroke="#EDE5D4" stroke-width="1.2"/>
+              <circle cx="38" cy="496" r="9" fill="#E7DFCE"/>
+              <text x="52" y="500" font-size="11.5" fill="#7A7264">王先生 · HR</text>
+              <rect x="196" y="484" width="72" height="25" rx="12.5" fill="#FFFCF5" stroke="#211D17" stroke-width="1.6"/>
+              <text x="232" y="501" text-anchor="middle" font-size="11.5" fill="#211D17">立即沟通</text>
+              <!-- 投递顺序指示 -->
+              <text x="150" y="556" text-anchor="middle" font-size="12.5" fill="#7A7264">① 筛好职位停在这一页</text>
+              <text x="150" y="574" text-anchor="middle" font-size="12.5" font-weight="600" fill="#B5502F">脚本会从上往下依次投递 ↓</text>
+              <rect x="130" y="580" width="40" height="4" rx="2" fill="#211D17"/>
+            </svg>
+            <figcaption>小事①：在 BOSS直聘里搜索、筛好职位，停在这个列表页。</figcaption>
+          </figure>
+
+          <figure class="fig">
+            <svg viewBox="0 0 300 600" role="img" aria-label="手机截图示意：BOSS直聘打招呼语设置页">
+              <rect x="10" y="10" width="280" height="580" rx="36" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+              <rect x="122" y="28" width="56" height="9" rx="4.5" fill="#211D17"/>
+              <text x="34" y="60" font-size="12" fill="#7A7264">9:41</text>
+              <line x1="58" y1="96" x2="42" y2="112" stroke="#211D17" stroke-width="2.2" stroke-linecap="round"/>
+              <line x1="42" y1="112" x2="58" y2="128" stroke="#211D17" stroke-width="2.2" stroke-linecap="round"/>
+              <text x="150" y="121" text-anchor="middle" font-size="17" font-weight="600" fill="#211D17">打招呼语</text>
+              <text x="30" y="172" font-size="12" letter-spacing="3" fill="#7A7264">开启打招呼语</text>
+              <rect x="224" y="156" width="46" height="27" rx="13.5" fill="#B5502F"/>
+              <circle cx="257" cy="169.5" r="10" fill="#FFFCF5"/>
+              <text x="30" y="216" font-size="12" letter-spacing="3" fill="#7A7264">打招呼语内容</text>
+              <rect x="18" y="230" width="264" height="96" rx="14" fill="#F2DFD4"/>
+              <text x="32" y="258" font-size="13" fill="#211D17">您好，我对这个职位很感兴趣，</text>
+              <text x="32" y="280" font-size="13" fill="#211D17">希望有机会进一步沟通，</text>
+              <text x="32" y="302" font-size="13" fill="#211D17">谢谢！</text>
+              <!-- 保存按钮 -->
+              <rect x="45" y="474" width="210" height="42" rx="21" fill="#211D17"/>
+              <text x="150" y="501" text-anchor="middle" font-size="14" fill="#F0E8D8">保存</text>
+              <text x="150" y="556" text-anchor="middle" font-size="12.5" fill="#7A7264">② 我的 → 设置 → 消息设置 → 打招呼语</text>
+              <text x="150" y="574" text-anchor="middle" font-size="12.5" font-weight="600" fill="#B5502F">设置后脚本无需输入任何文字</text>
+              <rect x="130" y="580" width="40" height="4" rx="2" fill="#211D17"/>
+            </svg>
+            <figcaption>小事②：设置好打招呼语并开启，脚本点「立即沟通」时自动带上。</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="stepnum">2</div>
+      <div>
+        <h4>彩排一遍</h4>
+        <pre><code>python main.py --task boss</code></pre>
+        <p>盯着终端看：每一行日志都在说它找到了什么。<b>没有红叉 <code>[X]</code>、没有「未找到控件」，就说明脚本认识你手机上的这个 App。</b></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="stepnum">3</div>
+      <div>
+        <h4>真刀真枪</h4>
+        <pre><code>python main.py --task boss --live</code></pre>
+        <p>这次它会真的点进职位、点「立即沟通」、打完招呼再返回下一个。想先小批量试水，加个上限：</p>
+        <pre><code>python main.py --task boss --live --max 10</code></pre>
+        <p>跑的过程中保持终端窗口开着、手机亮着屏。每投一个会随机歇 3–8 秒、偶尔「分神」发呆十几秒——这是刻意模仿真人、保护账号的设计，别嫌它慢。</p>
+      </div>
+    </div>
+
+    <h3><span class="no">B.</span>微信自动发消息</h3>
+    <div class="step">
+      <div class="stepnum">1</div>
+      <div>
+        <h4>把名单写进配置文件</h4>
+        <p>用记事本（推荐 <a href="https://code.visualstudio.com/" target="_blank">VS Code</a>）打开项目根目录的 <code>config.py</code>，找到 <code>WECHAT</code> 这一段，把要发的人和消息填进去：</p>
+        <pre><code>WECHAT = {
+    "targets": {
+        "文件传输助手": "来自电脑 RPA 的测试消息",
+        <span class="c"># "王哥": "下午好，文件已发你邮箱，查收。",</span>
+    },
+}</code></pre>
+        <p><b>注意两点：</b>引号、冒号、逗号必须是<b>英文符号</b>；第一行先只留「文件传输助手」做测试，确认能发成功再加大名单。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="stepnum">2</div>
+      <div>
+        <h4>彩排，然后发送</h4>
+        <pre><code>python main.py --task wechat
+python main.py --task wechat --live</code></pre>
+        <p>脚本会自动搜索联系人、输入消息、点发送。每发完一条自动退回主页再找下一位。</p>
+      </div>
+    </div>
+
+    <h3><span class="no">C.</span>命令速查</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>命令</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>python main.py --task boss</code></td><td>彩排：只找按钮不点击</td></tr>
+        <tr><td><code>python main.py --task boss --live</code></td><td>真实执行打招呼</td></tr>
+        <tr><td><code>python main.py --task boss --live --max 10</code></td><td>真实执行，本轮最多打 10 个</td></tr>
+        <tr><td><code>python main.py --task wechat --live</code></td><td>按 config.py 名单发微信消息</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><span class="tag">日志</span>每次运行都会在 <code>logs/</code> 文件夹留下一份完整日志；万一某一步找不到按钮，还会自动截图存进同一文件夹，方便对照排查。</div>
+  </div>
+</section>
+
+<!-- ============ 第四章 急停 ============ -->
+<section id="ch4">
+  <div class="wrap">
+    <div class="ch-eyebrow">Chapitre IV · 安全阀</div>
+    <div class="ch-head">
+      <div class="ch-num">IV</div>
+      <h2>随时急停</h2>
+    </div>
+    <p class="lead">脚本是听话的，但它更需要一个<b>一眼就能找到的刹车</b>。项目根目录里那两个 .bat 文件就是刹车，双击即用，不需要敲任何命令。</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 480 300" role="img" aria-label="示意图：急停大按钮与恢复按钮">
+        <!-- 面板 -->
+        <rect x="130" y="36" width="220" height="210" rx="22" fill="#FFFCF5" stroke="#211D17" stroke-width="3"/>
+        <!-- 大红按钮 -->
+        <circle cx="240" cy="128" r="54" fill="#B5502F" stroke="#211D17" stroke-width="3"/>
+        <circle cx="240" cy="128" r="36" fill="none" stroke="#FAF5EC" stroke-width="2.4" opacity=".55"/>
+        <text x="240" y="135" text-anchor="middle" font-size="15" font-weight="600" fill="#FAF5EC" letter-spacing="2">STOP</text>
+        <!-- 按压动效 -->
+        <path d="M198 62 q 42 -26 84 0" fill="none" stroke="#211D17" stroke-width="2" stroke-dasharray="4 5"/>
+        <path d="M226 46 q 14 -8 28 0" fill="none" stroke="#211D17" stroke-width="2" stroke-dasharray="4 5"/>
+        <path d="M236 52 l 4 10 4 -10 z" fill="#211D17" transform="rotate(180 240 57)"/>
+        <!-- 面板上的字 -->
+        <text x="240" y="216" text-anchor="middle" font-size="15" font-weight="600" fill="#211D17" letter-spacing="6">急 停</text>
+        <!-- 恢复小按钮 -->
+        <circle cx="416" cy="216" r="30" fill="#FFFCF5" stroke="#211D17" stroke-width="2.6"/>
+        <circle cx="416" cy="216" r="18" fill="none" stroke="#B5502F" stroke-width="2" stroke-dasharray="3 4"/>
+        <text x="416" y="221" text-anchor="middle" font-size="10.5" fill="#211D17">恢复</text>
+        <!-- 标注 -->
+        <line x1="130" y1="128" x2="76" y2="110" stroke="#7A7264" stroke-width="1.4"/>
+        <text x="70" y="100" text-anchor="end" font-size="13" fill="#7A7264">双击 stop_agent.bat</text>
+        <text x="70" y="120" text-anchor="end" font-size="13" fill="#7A7264">任务下一步立即停下</text>
+        <line x1="446" y1="216" x2="462" y2="150" stroke="#7A7264" stroke-width="1.4"/>
+        <text x="462" y="138" text-anchor="end" font-size="13" fill="#7A7264">双击 resume_agent.bat 恢复</text>
+        <!-- 点缀 -->
+        <path d="M66 232 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 z" fill="#B5502F" opacity=".5"/>
+      </svg>
+      <figcaption>急停与恢复：双击项目根目录下的两个 .bat 文件即可，无需命令行。</figcaption>
+    </figure>
+
+    <h3><span class="no">A.</span>三招急停，任选其一</h3>
+    <ul class="checklist">
+      <li><span class="tick">1</span><div><b>双击 <code>stop_agent.bat</code></b><div class="d">最优雅的方式。它只是悄悄创建一个名为 INTERRUPT 的小文件；正在跑的任务会在下一步（点击前、延迟中）立即停下，AI 的所有「写操作」也会被拒绝。</div></div></li>
+      <li><span class="tick">2</span><div><b>直接关掉那个黑色终端窗口</b><div class="d">简单粗暴，脚本随窗口一起消失。</div></div></li>
+      <li><span class="tick">3</span><div><b>拔掉数据线</b><div class="d">最物理的方式，电脑瞬间「失明」。</div></div></li>
+    </ul>
+    <div class="note"><span class="tag">恢复</span>急停后想继续，双击 <code>resume_agent.bat</code> 即可（它的本质是删掉那个开关文件）。另外，<b>截图、读屏幕文字</b>这类只读操作不受急停影响——急停后你仍可以让脚本「看一眼手机现在什么状态」。</div>
+  </div>
+</section>
+
+<!-- ============ 第五章 AI 操控 ============ -->
+<section id="ch5">
+  <div class="wrap">
+    <div class="ch-eyebrow">Chapitre V · 进阶</div>
+    <div class="ch-head">
+      <div class="ch-num">V</div>
+      <h2>让 AI 帮你操控手机</h2>
+    </div>
+    <p class="lead">项目内置了一个 <b>MCP 服务</b>——可以理解为给 AI 助手开的一扇「遥控窗口」。在支持 MCP 的客户端（Claude Code、Cursor、WorkBuddy 等）里配置一次，AI 就能<b>实时看你的手机屏幕、帮你点按输入</b>，你说人话，它动手。</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 560 330" role="img" aria-label="示意图：用户对AI下指令，AI观察并操作手机">
+        <!-- 用户气泡1 -->
+        <rect x="24" y="34" width="212" height="42" rx="14" fill="#FFFCF5" stroke="#211D17" stroke-width="2"/>
+        <path d="M236 62 l 12 4 -12 6 z" fill="#FFFCF5" stroke="#211D17" stroke-width="2" stroke-linejoin="round"/>
+        <text x="130" y="60" text-anchor="middle" font-size="13.5" fill="#211D17">帮我看看手机现在什么页面</text>
+        <!-- AI气泡1 -->
+        <rect x="286" y="88" width="216" height="60" rx="14" fill="#F2DFD4" stroke="#B5502F" stroke-width="2"/>
+        <path d="M286 104 l -12 -4 12 -6 z" fill="#F2DFD4" stroke="#B5502F" stroke-width="2" stroke-linejoin="round"/>
+        <text x="302" y="112" font-size="13" fill="#8F3B20">已截图：你在微信聊天列表。</text>
+        <text x="302" y="134" font-size="13" fill="#8F3B20">要我帮你回谁的消息吗？</text>
+        <!-- 用户气泡2 -->
+        <rect x="24" y="166" width="212" height="42" rx="14" fill="#FFFCF5" stroke="#211D17" stroke-width="2"/>
+        <path d="M236 194 l 12 4 -12 6 z" fill="#FFFCF5" stroke="#211D17" stroke-width="2" stroke-linejoin="round"/>
+        <text x="130" y="192" text-anchor="middle" font-size="13.5" fill="#211D17">给王哥回一句：下午到</text>
+        <!-- AI气泡2 -->
+        <rect x="286" y="226" width="216" height="42" rx="14" fill="#F2DFD4" stroke="#B5502F" stroke-width="2"/>
+        <path d="M286 242 l -12 -4 12 -6 z" fill="#F2DFD4" stroke="#B5502F" stroke-width="2" stroke-linejoin="round"/>
+        <text x="302" y="252" font-size="13" fill="#8F3B20">已发送 ✓ 消息已送达王哥。</text>
+        <!-- 手机 -->
+        <rect x="378" y="18" width="104" height="200" rx="18" fill="#FFFCF5" stroke="#211D17" stroke-width="2.6" transform="rotate(6 430 118)"/>
+        <g transform="rotate(6 430 118)">
+          <rect x="392" y="40" width="76" height="16" rx="8" fill="#F2DFD4"/>
+          <rect x="392" y="66" width="76" height="10" rx="5" fill="#EDE5D4"/>
+          <rect x="392" y="84" width="76" height="10" rx="5" fill="#EDE5D4"/>
+          <rect x="392" y="110" width="76" height="26" rx="13" fill="#B5502F"/>
+          <text x="430" y="127" text-anchor="middle" font-size="11" fill="#FAF5EC">发送</text>
+          <circle cx="430" cy="170" r="14" fill="none" stroke="#B5502F" stroke-width="2"/>
+          <circle cx="430" cy="170" r="24" fill="none" stroke="#B5502F" stroke-width="1.2" opacity=".4"/>
+        </g>
+        <!-- 操作光标线 -->
+        <path d="M460 246 C 480 236, 484 214, 470 196" fill="none" stroke="#211D17" stroke-width="1.6" stroke-dasharray="4 4"/>
+        <path d="M474 200 L 469 192 L 478 194 Z" fill="#211D17"/>
+        <!-- 点缀 -->
+        <path d="M270 20 l2.6 7 7 2.6 -7 2.6 -2.6 7 -2.6 -7 -7 -2.6 7 -2.6 z" fill="#B5502F" opacity=".7"/>
+        <path d="M252 282 l2 5.4 5.4 2 -5.4 2 -2 5.4 -2 -5.4 -5.4 -2 5.4 -2 z" fill="#B5502F" opacity=".4"/>
+        <text x="130" y="304" text-anchor="middle" font-size="12.5" fill="#7A7264">你 · 说人话</text>
+        <text x="394" y="304" text-anchor="middle" font-size="12.5" fill="#7A7264">AI · 截图 → 看 → 点 → 再截图验证</text>
+      </svg>
+      <figcaption>感知—操作闭环：AI 截图看屏幕、按你说的点按输入、再截图确认结果。</figcaption>
+    </figure>
+
+    <div class="step">
+      <div class="stepnum">1</div>
+      <div>
+        <h4>在 AI 客户端里注册一段配置</h4>
+        <p>以 Claude Code / Cursor 为例，在 MCP 配置里加入下面这段 JSON（<b>把路径换成你自己的项目位置</b>；macOS / Linux 把 <code>Scripts</code> 换成 <code>bin</code>）：</p>
+        <pre><code>{
+  "mcpServers": {
+    "android-rpa": {
+      "command": "E:/android-rpa/.venv/Scripts/python.exe",
+      "args": ["E:/android-rpa/mcp_server.py"]
+    }
+  }
+}</code></pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="stepnum">2</div>
+      <div>
+        <h4>像使唤助理一样使唤它</h4>
+        <p>配置好之后，直接对 AI 说：<b>「帮我看看手机现在什么页面」「帮我在微信里给 XX 发条消息」「把当前页面截图给我看看」</b>。它会自己完成截图 → 读屏 → 点击 → 验证的全过程。</p>
+      </div>
+    </div>
+
+    <h3><span class="no">C.</span>它手里有哪些遥控器</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>能力</th><th>对应的工具</th><th>受急停保护</th></tr></thead>
+      <tbody>
+        <tr><td>实时截图</td><td><code>phone_screenshot</code></td><td>—（只读，急停仍可用）</td></tr>
+        <tr><td>读屏幕文字与坐标</td><td><code>phone_ui_texts</code></td><td>—（只读）</td></tr>
+        <tr><td>按坐标 / 按文字点击</td><td><code>phone_tap</code> / <code>phone_tap_text</code></td><td>✓</td></tr>
+        <tr><td>上下左右滑动</td><td><code>phone_swipe</code></td><td>✓</td></tr>
+        <tr><td>输入中文文字</td><td><code>phone_input_text</code></td><td>✓</td></tr>
+        <tr><td>返回 / Home / 回车</td><td><code>phone_key</code></td><td>✓</td></tr>
+        <tr><td>启动 App / 等待</td><td><code>phone_start_app</code> / <code>phone_wait</code></td><td>✓</td></tr>
+        <tr><td>设置 / 清除急停</td><td><code>phone_request_stop</code> / <code>phone_resume</code></td><td>—</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><span class="tag">安心</span>第四章的急停在这里同样有效：INTERRUPT 开关一开，AI 的所有写操作（点击、滑动、输入）都会被当场拒绝，只保留「看」的能力。</div>
+  </div>
+</section>
+
+<!-- ============ 第六章 卸载 ============ -->
+<section id="ch6">
+  <div class="wrap">
+    <div class="ch-eyebrow">Chapitre VI · 好聚好散</div>
+    <div class="ch-head">
+      <div class="ch-num">VI</div>
+      <h2>不用了，怎么卸干净</h2>
+    </div>
+    <p class="lead">本项目对手机的全部改动只有两样：一个叫 ATX 的助手 App，和 /data/local/tmp/ 下的一个组件文件。两条命令清干净，手机恢复出厂般的清净。</p>
+    <pre><code>adb uninstall com.github.uiautomator
+adb shell rm /data/local/tmp/u2.jar</code></pre>
+    <p>然后回到手机的<b>开发人员选项</b>，把「USB 调试」开关关掉（甚至整个开发者模式停用），拔线收工。电脑这边只需删掉项目文件夹，不留任何残余。</p>
+    <div class="note"><span class="tag">认一认</span>ATX App 的图标就在手机桌面上，名字是「ATX」，卸载后图标随之消失。</div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="ch-eyebrow">Questions · 答疑</div>
+    <div class="ch-head">
+      <div class="ch-num">?</div>
+      <h2>常见问题</h2>
+    </div>
+    <details>
+      <summary>adb devices 显示一片空白，电脑「看不见」手机？</summary>
+      <p>按命中率排查：<b>① 数据线</b>——很多线只能充电，换一根确定能传数据的；<b>② 手机弹窗</b>——插线后手机有没有弹「允许 USB 调试」，没弹就把手机屏幕点亮、下拉通知栏把 USB 用途改成「传输文件」再重插；<b>③ 华为专属开关</b>——「仅充电模式下允许 ADB 调试」也要打开；<b>④ 终极手段</b>——手机和电脑各重启一次，玄学但有效。</p>
+    </details>
+    <details>
+      <summary>显示 unauthorized（未授权）是什么意思？</summary>
+      <p>电脑看见手机了，但手机还没点头。解锁手机屏幕，重新插拔一次数据线，在弹窗里勾选「一律允许」再点「允许」即可。</p>
+    </details>
+    <details>
+      <summary>运行时报「未检测到设备」？</summary>
+      <p>就是上面两个问题的另一种说法。先把 <code>adb devices</code> 调通（能看到 <code>device</code> 字样），脚本自然就能连上。多台手机同时连着时，用环境变量 <code>ANDROID_RPA_SERIAL</code> 或 <code>config_local.py</code> 指定要控制哪一台。</p>
+    </details>
+    <details>
+      <summary>脚本会不会把我的账号搞封？</summary>
+      <p>有风险，务必敬畏。脚本已内置随机延迟、概率性「分神」、单轮操作上限等拟人设计，但 BOSS直聘、微信都有自动化检测。守三条底线：<b>用小号先试、保持低频、话术别所有人发同一句</b>。账号被限制的代价远大于省下的时间。</p>
+    </details>
+    <details>
+      <summary>跑着跑着提示「未找到控件」？</summary>
+      <p>多半是 App 更新了界面文字或布局。项目自带调试利器 weditor：<code>pip install weditor</code> 后运行 <code>python -m weditor</code>，浏览器打开 <code>http://localhost:17310</code>，就能实时看到手机每个控件的名字，把新名字更新进 <code>apps/*.py</code> 的 <code>find(...)</code> 里即可。</p>
+    </details>
+    <details>
+      <summary>我的 iPhone 可以吗？</summary>
+      <p>不可以。这套方案基于安卓官方的 adb 与无障碍控件体系，iOS 是完全封闭的另一套体系。安卓手机（含 HarmonyOS）都没问题。</p>
+    </details>
+    <details>
+      <summary>手机上多出来的「ATX」是什么？可以删吗？</summary>
+      <p>它是 <code>python -m uiautomator2 init</code> 装上的「传令兵」，电脑靠它把指令翻译给手机。删了脚本就失灵；想彻底清理按第六章两条命令操作。</p>
+    </details>
+  </div>
+</section>
+
+<!-- ============ 页脚 ============ -->
+<footer>
+  <div class="wrap">
+    <div class="fin">— Fin —</div>
+    <p>Android RPA · 使用指南 · I — VI</p>
+    <p>对应代码版本 2026-10-15 · 更多技术细节见项目 README.md</p>
+    <p>风险提醒：自动化有风险，小号先行，低频为上。</p>
+  </div>
+</footer>
+
+<!-- ============ 灯箱 ============ -->
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="图片放大查看">
+  <button id="lb-close" type="button" aria-label="关闭">✕</button>
+  <button id="lb-prev" type="button" aria-label="上一张">‹</button>
+  <div id="lb-stage"></div>
+  <div id="lb-cap"></div>
+  <button id="lb-next" type="button" aria-label="下一张">›</button>
+</div>
+
+<script>
+(function () {
+  var overlay = document.getElementById('lightbox');
+  var stage = document.getElementById('lb-stage');
+  var cap = document.getElementById('lb-cap');
+  var figs = Array.prototype.slice.call(document.querySelectorAll('figure.fig'));
+  var idx = 0;
+
+  function render() {
+    var f = figs[idx];
+    var svg = f.querySelector('svg').cloneNode(true);
+    var vb = svg.viewBox.baseVal;
+    var ratio = vb.width / vb.height;
+    var maxW = Math.min(window.innerWidth * 0.9, 780);
+    var maxH = window.innerHeight * 0.76;
+    var w = Math.min(maxW, maxH * ratio);
+    svg.removeAttribute('style');
+    svg.style.width = w + 'px';
+    svg.style.height = (w / ratio) + 'px';
+    stage.innerHTML = '';
+    stage.appendChild(svg);
+    var fc = f.querySelector('figcaption');
+    cap.textContent = fc ? fc.textContent : '';
+  }
+  function show(i) {
+    idx = (i + figs.length) % figs.length;
+    render();
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function hide() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  figs.forEach(function (f, i) {
+    f.setAttribute('tabindex', '0');
+    f.setAttribute('role', 'button');
+    f.setAttribute('aria-label', '放大查看：' + (f.querySelector('figcaption') || {}).textContent);
+    f.addEventListener('click', function () { show(i); });
+    f.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(i); }
+    });
+  });
+  document.getElementById('lb-close').addEventListener('click', hide);
+  document.getElementById('lb-prev').addEventListener('click', function (e) { e.stopPropagation(); show(idx - 1); });
+  document.getElementById('lb-next').addEventListener('click', function (e) { e.stopPropagation(); show(idx + 1); });
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) hide(); });
+  document.addEventListener('keydown', function (e) {
+    if (!overlay.classList.contains('open')) return;
+    if (e.key === 'Escape') hide();
+    if (e.key === 'ArrowLeft') show(idx - 1);
+    if (e.key === 'ArrowRight') show(idx + 1);
+  });
+  window.addEventListener('resize', function () {
+    if (overlay.classList.contains('open')) render();
+  });
+
+  // 一键复制：所有 pre>code 自动注入复制按钮（提示词卡片已有专用按钮，跳过）
+  function makeCopyBtn(text, label, mini) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pre-copy' + (mini ? ' mini' : '');
+    btn.setAttribute('aria-label', '复制内容到剪贴板');
+    btn.textContent = label;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var timer = null;
+      function done() {
+        btn.classList.add('copied');
+        btn.textContent = '已复制 ✓';
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          btn.classList.remove('copied');
+          btn.textContent = label;
+        }, 1800);
+      }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (err) {}
+        document.body.removeChild(ta);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else {
+        fallback();
+      }
+    });
+    return btn;
+  }
+
+  // 普通命令块：悬浮右上角的小号按钮，不占代码行
+  document.querySelectorAll('pre > code').forEach(function (code) {
+    if (code.id === 'prompt-code') return;   // 提示词卡片已有专用按钮
+    var pre = code.parentElement;
+    if (pre.querySelector('.pre-copy')) return;
+    pre.classList.add('has-copy');
+    pre.appendChild(makeCopyBtn(code.innerText, '复制', true));
+  });
+
+  // 提示词卡片：保留大号按钮
+  var copyBtn = document.getElementById('prompt-copy');
+  if (copyBtn) {
+    var big = makeCopyBtn(document.getElementById('prompt-code').innerText, '复制提示词', false);
+    big.id = 'prompt-copy';
+    copyBtn.replaceWith(big);
+  }
+})();
+</script>
+</body>
+</html>
