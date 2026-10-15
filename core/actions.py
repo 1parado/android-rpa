@@ -109,6 +109,86 @@ class Robot:
             return False
         return self.tap(el, label or text)
 
+    def long_press(self, el_or_xy, duration=1.0, label=""):
+        """长按。el_or_xy 传控件对象或 (x, y) 坐标；duration 单位秒"""
+        self.check_budget()
+        if hasattr(el_or_xy, "click"):          # 控件对象
+            target = el_or_xy
+            name = label or el_or_xy.info.get("text", "")
+        else:                                    # (x, y) 坐标
+            x, y = el_or_xy
+            target = None
+            name = label or f"({x},{y})"
+        if self.dry_run:
+            log.info(f"[DRY] 长按 {name}")
+            return True
+        log.info(f"长按 {duration:.1f}s: {name}")
+        if target is not None:
+            target.long_click(duration=duration)
+        else:
+            self.d.long_click(x, y, duration=duration)
+        self.human_delay()
+        return True
+
+    def double_tap(self, el_or_xy, label=""):
+        """双击。控件对象或 (x, y) 坐标"""
+        self.check_budget()
+        if hasattr(el_or_xy, "click"):
+            target = el_or_xy
+            name = label or el_or_xy.info.get("text", "")
+        else:
+            x, y = el_or_xy
+            target = None
+            name = label or f"({x},{y})"
+        if self.dry_run:
+            log.info(f"[DRY] 双击 {name}")
+            return True
+        log.info(f"双击: {name}")
+        if target is not None:
+            target.double_click()
+        else:
+            self.d.double_click(x, y)
+        self.human_delay()
+        return True
+
+    def swipe_direction(self, direction, scale=0.9, label=""):
+        """按屏幕比例方向滑动：direction 取 up / down / left / right，
+        scale 为滑动幅度占屏幕的比例 (0, 1]。适合翻页、下拉刷新等模糊滑动"""
+        self.check_budget()
+        if self.dry_run:
+            log.info(f"[DRY] 滑动 {direction} scale={scale}")
+            return True
+        log.info(f"滑动 {direction} scale={scale} {label}")
+        self.d.swipe_ext(direction, scale=scale)
+        self.human_delay()
+        return True
+
+    def gesture_path(self, points, duration=0.5, label=""):
+        """多点连续手势：points 为 [(x, y), ...] 至少两点，逐点注入。
+        可做曲线滑动、手势解锁轨迹等复杂手势（底层单指）"""
+        self.check_budget()
+        if len(points) < 2:
+            log.warning("gesture_path 至少需要两个点")
+            return False
+        if self.dry_run:
+            log.info(f"[DRY] 手势路径 {len(points)} 点 {label}")
+            return True
+        log.info(f"手势路径 {len(points)} 点 {label}")
+        self.d.swipe_points(points, duration=duration)
+        self.human_delay()
+        return True
+
+    def drag(self, start, end, duration=0.5, label=""):
+        """拖拽：按住 start 拖到 end（与滑动不同，drag 有明确的按下-移动-抬起时序）"""
+        self.check_budget()
+        if self.dry_run:
+            log.info(f"[DRY] 拖拽 {start}->{end} {label}")
+            return True
+        log.info(f"拖拽 {start}->{end} {label}")
+        self.d.drag(start[0], start[1], end[0], end[1], duration=duration)
+        self.human_delay()
+        return True
+
     def input_text(self, el, text, label="输入框"):
         self.check_budget()
         if self.dry_run:

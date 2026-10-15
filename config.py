@@ -42,7 +42,9 @@ ADB_PATH = _find_adb()
 # （也可用环境变量 ANDROID_RPA_SERIAL 覆盖，无需改代码）
 DEVICE_SERIAL = os.environ.get("ANDROID_RPA_SERIAL", "")
 
-# 目标 App 包名（不同 App 改这里）
+# 目标 App 包名：加新 App 只需在这里加一行 "别名": "包名"，
+# 然后在 apps/ 下参照 boss_zhipin.py 写一个 run(r) 流程模块即可
+# （包名可用 adb shell pm list packages | grep 关键词 查询）
 PACKAGES = {
     "boss": "com.hpbr.bosszhipin",
     "wechat": "com.tencent.mm",

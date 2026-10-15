@@ -111,7 +111,7 @@ android-rpa/
 ├── core/
 │   ├── device.py        # adb 检测 + u2 连接
 │   ├── control.py       # 人为打断开关（INTERRUPT 文件）
-│   └── actions.py       # Robot：人味延迟、查找、点击、输入、截图、操作预算
+└── actions.py       # Robot：人味延迟、查找、点击/长按/双击、滑动/手势/拖拽、输入、截图、操作预算
 ├── apps/
 │   ├── boss_zhipin.py   # BOSS直聘自动打招呼
 │   └── wechat.py        # 微信自动发消息
@@ -147,6 +147,27 @@ python main.py --task wechat --live
   - 选择器用文本/描述而非控件 id，App 更新不易失效
 - **异常留痕**：找不到预期控件时自动截图到 `logs/`，方便对照修正。
 - **跨设备适配**：坐标按屏幕比例计算，控件找不到时有多级兜底（文本 → 描述 → 已知 id → 相对坐标）。
+
+## 手势能力（Robot 通用原语）
+
+`core/actions.py` 的 `Robot` 封装了与具体 App 无关的操作原语，扩展新任务直接复用：
+
+| 方法 | 说明 |
+|---|---|
+| `tap(el_or_xy)` / `tap_text(text)` | 点击控件或坐标 / 按文字查找后点击 |
+| `long_press(el_or_xy, duration)` | 长按（控件或坐标），默认 1 秒 |
+| `double_tap(el_or_xy)` | 双击（控件或坐标） |
+| `swipe_direction("up" \|"down" \|"left" \|"right", scale)` | 按屏幕比例的方向滑动（翻页/下拉刷新） |
+| `gesture_path([(x,y), ...], duration)` | 多点连续手势：曲线滑动、手势解锁轨迹等 |
+| `drag(start, end, duration)` | 拖拽（按下-移动-抬起时序，区别于滑动） |
+| `input_text(el, text)` | 输入中文（ADB 键盘，自动还原原输入法） |
+| `find/find(...)` | 按 文本/资源id/描述/模糊文本 查找控件 |
+
+所有手势都受 dry-run、操作预算与人为打断保护。底层为 uiautomator2 单指手势；
+多指/画布类界面需图像识别方案，不在当前范围内。
+
+**加一个新 App 任务**：`config.py` 的 `PACKAGES` 加一行 `"别名": "包名"`，
+再在 `apps/` 下参照 `boss_zhipin.py` 写一个 `run(r)` 流程模块、在 `main.py` 挂上即可。
 
 ## 元素定位调试
 
