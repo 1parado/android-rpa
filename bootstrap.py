@@ -62,7 +62,9 @@ def check_adb() -> str:
     step("3/5 adb 发现")
     env = os.environ.get("ANDROID_RPA_ADB")
     adb = (env if env and os.path.isfile(env) else None) or shutil.which("adb")
-    for p in (r"C:\platform-tools\adb.exe", "/usr/bin/adb",
+    for p in (os.path.expandvars(
+              r"%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"),
+              r"C:\platform-tools\adb.exe", "/usr/bin/adb",
               "/usr/local/bin/adb", "/opt/homebrew/bin/adb"):
         if adb is None and os.path.isfile(p):
             adb = p
