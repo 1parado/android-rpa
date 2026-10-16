@@ -377,3 +377,269 @@ def run(r: Robot, screens: int = None):
     report = generate_report(r, feed_rows, hot_rows, ranking_rows)
     log.info(f"选题雷达完成：热榜 {len(hot_rows)} / 推荐流 {len(feed_rows)} / "
              f"排行 {len(ranking_rows)}，日报 {'✓ ' + report if report else '跳过'}")
+
+
+# ---------- UP 主观测（--task bili_up） ----------
+# 深链拉起任意 UP 主页：bilibili://space/{mid}，无需搜索导航
+NUM_RE = re.compile(r"([\d.]+\s*[万亿]?)")
+# 列表页每条视频的元信息行，如「12.3万 2452 3天前」或分行：「12.3万」「2452」「3天前」
+META_TIME_RE = re.compile(r"^(\d+)\s*(秒|分钟|小时|天|周|个月|月|年)前$")
+
+
+def _parse_num(s: str) -> str:
+    """「12.3万」→「12.3万」原样留空格规整；非数字返回空"""
+    m = NUM_RE.fullmatch(s.replace(" ", ""))
+    return m.group(1) if m else ""
+
+
+def _goto_up(r: Robot, mid: int, note: str):
+    """深链打开 UP 主页，返回 True/False"""
+    log.info(f"打开 UP 主页: {note} (mid={mid})")
+    r.check_budget()
+    # 深链用 am start（该版 uiautomator2 的 app_start 不支持 data）
+    r.d.shell(f'am start -a android.intent.action.VIEW '
+              f'-d "bilibili://space/{mid}" {PACKAGE}')
+    time.sleep(5)
+    _clear_popups(r)
+    # 简单校验：页面应有「投稿」或「关注」类按钮文本
+    texts = {t for t, _ in r.dump_texts()}
+    if not any(("投稿" in t or "关注" in t or "粉丝" in t) for t in texts):
+        log.warning(f"UP 主页可能未加载成功: {note}")
+        r.screenshot("bili_up_fail")
+        return False
+    return True
+
+
+def _back_to_list(r: Robot, times: int = 2):
+    """从视频详情页退回列表页"""
+    for _ in range(times):
+        r.press_back()
+        time.sleep(1.5)
+
+
+def _load_up_csv(note: str) -> list:
+    """读取今天已有的 up_{note}_{今天}.csv（增量采集用），无则返回 []"""
+    day = datetime.now().strftime("%Y%m%d")
+    path = os.path.join(DATA_DIR, f"up_{note}_{day}.csv")
+    if not os.path.isfile(path):
+        return []
+    try:
+        with open(path, encoding="utf-8-sig") as f:
+            return list(csv.DictReader(f))
+    except OSError:
+        return []
+
+
+def collect_up_videos(r: Robot, mid: int, note: str, detail: int = 0,
+                      screens: int = None) -> dict:
+    """采集 UP 主最近视频：列表页（标题/播放/发布时间）+ 可选详情页（点赞/投币/收藏）。
+    返回 {up, mid, rows: [...]}"""
+    if not _goto_up(r, mid, note):
+        return {"up": note, "mid": mid, "rows": []}
+
+    # 切到「投稿/视频」tab（有些 UP 默认落在动态页）
+    for cand in ("投稿", "视频"):
+        el = _find_by_texts(r, [cand])
+        if el:
+            r.tap(el, f"{note} 的 {cand} tab")
+            break
+
+    # 翻屏收集列表项。投稿 tab 的卡片布局（实测 dump）：
+    #   标题行 x≈450 宽到 1044，高 ~112；其上方一行：时长(x≈318) 日期(x≈450) 播放(x≈450) 弹幕(x≈681)
+    seen_local, raw = set(), []
+    screens = screens if screens is not None else config.BILI.get("up_screens", 3)
+    # 日期文本实测有：9月29日 / 9-29 / 昨天 17:00 / 今天 / 3天前 / 5小时前
+    DATE_RE = re.compile(
+        r"^\d{1,2}月\d{1,2}日$|^\d{1,2}-\d{1,2}$|^\d{4}-\d{1,2}-\d{1,2}"
+        r"|^昨天|^今天|^\d+天前$|^\d+小时前$|^\d+分钟前$|^刚刚$")
+    for s in range(screens):
+        if r.op_count > r.op_budget:
+            log.warning("操作预算耗尽，提前结束 UP 采集")
+            break
+        nodes = r.dump_texts()
+        # 投稿列表是自绘控件，dump 偶尔拿不到文本节点；轻滚 1px 触发重渲染后重试
+        retry = 0
+        while not any(t for t, _ in nodes) or len(nodes) < 15:
+            if retry >= 2:
+                break
+            retry += 1
+            log.info(f"列表 dump 为空，轻滚重试 {retry}/2")
+            r.d.swipe(540, 1500, 540, 1498)
+            time.sleep(1.5)
+            nodes = r.dump_texts()
+        h = r.d.info["displayHeight"]
+        # 标题判定：x 起点在 430~480、文本足够长、位于列表区
+        # 标题按页面顺序处理；元信息节点「用过即划走」，避免相邻卡片串行（错位根因）
+        titles = sorted(
+            [(t, b) for t, b in nodes
+             if 430 <= b["left"] <= 480 and 6 <= len(t) <= 60
+             and b["top"] >= 430 and b["bottom"] < h - 160
+             and not re.fullmatch(r"[\d\s.:/%万千亿+-]+", t)
+             and not DATE_RE.match(t)],   # 「昨天 17:00」等日期文本 x 也在标题列
+            key=lambda x: x[1]["top"])
+        used = set()
+        for t, tb in titles:
+            if t in seen_local:
+                continue
+            seen_local.add(t)
+            # 元信息行：标题下方到下一张卡片之间（实测：标题 bottom≈2055，
+            # 其下方依次是 日期 top2061 → 播放/弹幕 top2111；下一条标题 top≈2380）
+            nxt = next((b2["top"] for t2, b2 in titles if b2["top"] > tb["top"]), h)
+            pub, play, danmaku = "", "", ""
+            for j, (t2, b2) in enumerate(nodes):
+                if id(b2) in used or b2 is tb:
+                    continue
+                if not (tb["bottom"] - 8 <= b2["top"] < min(nxt, tb["bottom"] + 240)):
+                    continue
+                if DATE_RE.match(t2):
+                    pub = t2
+                    used.add(id(b2))
+                elif 430 <= b2["left"] <= 480 and _parse_num(t2) and not play:
+                    play = _parse_num(t2)
+                    used.add(id(b2))
+                elif b2["left"] > 640 and _parse_num(t2) and not danmaku:
+                    danmaku = _parse_num(t2)
+                    used.add(id(b2))
+            raw.append({"title": t, "play": play, "danmaku": danmaku,
+                        "pub": pub,
+                        "collected_at": datetime.now().isoformat(timespec="seconds")})
+        log.info(f"UP「{note}」列表第{s+1}/{screens}屏，累计 {len(raw)} 条")
+        if s < screens - 1:
+            r.swipe_direction("up", scale=0.8, label="UP 视频列表翻屏")
+            time.sleep(2.5)
+
+    # 排序：按页面 y 顺序即发布顺序（新的在上）
+    rows = raw[:40]
+    _first = True
+    for i, row in enumerate(rows):
+        row["seq"] = i + 1
+
+    # 增量：读取当天已有数据，旧条目直接沿用（详情字段也带过来），只补采缺失的
+    prev = {row["title"]: row for row in _load_up_csv(note)}
+    for row in rows:
+        old = prev.get(row["title"])
+        if old:
+            for k in ("play", "danmaku", "pub", "like", "coin", "fav", "comment"):
+                if old.get(k) and not row.get(k):
+                    row[k] = old[k]
+
+    # 可选：点进最近 N 条采详情（点赞/投币/收藏）——先滚回列表顶部
+    detail = detail if detail is not None else config.BILI.get("up_detail", 0)
+    if detail > 0 and not r.dry_run and rows:
+        need = [row for row in rows[:detail] if not row.get("like")]
+        if need:
+            log.info(f"详情需补采 {len(need)}/{min(detail, len(rows))} 条（其余已有数据，跳过）")
+            if _back_to_space(r, mid, note):
+                _collect_details(r, need)
+        else:
+            log.info("详情数据全部已有，跳过详情页采集")
+
+    _save_csv(f"up_{note}", rows,
+              ["seq", "title", "play", "danmaku", "pub",
+               "like", "coin", "fav", "comment", "collected_at"])
+    log.info(f"UP「{note}」采集 {len(rows)} 条")
+    return {"up": note, "mid": mid, "rows": rows}
+
+
+def _scroll_top(r: Robot, steps: int = 5):
+    """列表滚回顶部：从列表内容区（避开顶部横幅/收藏入口）半屏上滑"""
+    for _ in range(steps):
+        if "authorspace" not in r.d.app_current()["activity"].lower():
+            log.warning("已离开 UP 主页，停止回滚")
+            return
+        r.d.swipe(540, 1200, 540, 1900, duration=0.3)   # 半屏上滑，起点避开卡片点击
+        time.sleep(1)
+    time.sleep(1.5)
+
+
+def _back_to_space(r: Robot, mid: int, note: str):
+    """确保回到 UP 主页（误入子页面时返回；已不在 App 内则重走深链）"""
+    for _ in range(4):
+        act = r.d.app_current()["activity"].lower()
+        if "authorspace" in act:
+            _scroll_top(r)
+            return True
+        if "bilibili" not in act:
+            return _goto_up(r, mid, note)
+        r.d.press("back")
+        time.sleep(1.5)
+    return "authorspace" in r.d.app_current()["activity"].lower()
+
+
+def _collect_details(r: Robot, rows: list):
+    """点进视频详情页补采点赞/投币/收藏/评论数。
+    底栏操作区是图标按钮、数字在图标下方且无文字标签（实测 dump）：
+    同一 y 行（±8px）内按 x 排序依次为 赞 / [不喜欢=文本] / 币 / 藏 / 分享。
+    评论数在顶部「评论」tab 标签右侧（实测 top≈782, left≈426）。"""
+    log.info(f"进入详情页补采 {len(rows)} 条（可见卡片采完后自动下滑列表继续找）...")
+    pending = list(rows)
+    stale = 0          # 连续整屏下滑都没找到新卡片的次数
+    while pending and stale < 3:
+        row = pending[0]
+        el = _find_by_texts(r, [row["title"][:15]])
+        if not el:
+            # 当前屏找不到 → 下滑一屏再找；滚到底反复找不到则放弃
+            log.info(f"当前屏未找到「{row['title'][:20]}」，下滑列表继续")
+            act = r.d.app_current()["activity"].lower()
+            if "authorspace" not in act:
+                log.warning("已离开 UP 主页，终止详情补采")
+                break
+            r.d.swipe(540, 1700, 540, 800, duration=0.4)
+            time.sleep(2)
+            stale += 1
+            # 下滑后再试，若找到会清零 stale
+            el = _find_by_texts(r, [row["title"][:15]])
+            if not el:
+                continue
+        stale = 0
+        pending.pop(0)
+        r.tap(el, f"视频: {row['title'][:20]}")
+        time.sleep(4)
+        nodes = r.dump_texts()
+        # 评论数：「评论」标签右侧紧邻的数字
+        for i, (t, b) in enumerate(nodes):
+            if t == "评论":
+                cand = [(_parse_num(t2), b2)
+                        for t2, b2 in nodes[i + 1:i + 5]
+                        if _parse_num(t2)
+                        and abs(b2["top"] - b["top"]) <= 30 and b2["left"] > b["left"]]
+                if cand:
+                    row["comment"] = cand[0][0]
+                break
+        # 找操作区数字行：同一 y 上有 ≥3 个数字节点（赞/币/藏/分享）
+        by_row = {}
+        for t, b in nodes:
+            if _parse_num(t) and b["top"] > 600:   # 排除标题区/播放数区
+                key = b["top"] // 8
+                by_row.setdefault(key, []).append((b["left"], _parse_num(t)))
+        best = max(by_row.values(), key=len, default=[])
+        best.sort()
+        nums = [v for _, v in best]
+        if len(nums) >= 4:
+            row["like"], row["coin"], row["fav"] = nums[0], nums[-3], nums[-2]
+        elif len(nums) == 3:
+            row["like"], row["coin"], row["fav"] = nums
+        log.info(f"详情 {row['seq']}: 赞={row.get('like','?')} 币={row.get('coin','?')} "
+                 f"藏={row.get('fav','?')} 评={row.get('comment','?')}")
+        _back_to_list(r, times=1)
+
+
+def run_up(r: Robot, up_names: list = None, detail: int = None,
+           screens: int = None):
+    """--task bili_up 入口：采集 config.BILI.up_list 中的 UP（或指定备注名子集）"""
+    up_list = config.BILI.get("up_list") or {}
+    if not up_list:
+        log.error("config.BILI.up_list 为空，请先添加 {备注名: UID}")
+        return
+    r.op_budget = config.BILI["max_ops"] * max(1, len(up_list))
+    names = up_names or list(up_list)
+    results = []
+    for note in names:
+        mid = up_list.get(note)
+        if not mid:
+            log.warning(f"up_list 中找不到 {note}，跳过")
+            continue
+        results.append(collect_up_videos(r, mid, note, detail=detail,
+                                         screens=screens))
+    total = sum(len(x["rows"]) for x in results)
+    log.info(f"UP 观测完成：{len(results)} 个 UP，共 {total} 条视频记录")
