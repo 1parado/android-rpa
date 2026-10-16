@@ -7,6 +7,9 @@ __pycache__/
 logs/
 INTERRUPT
 
+# workbuddy 记忆目录（本地隐私数据）
+workbuddy/memory/
+
 # 本地私有配置（个人 adb 路径 / 设备序列号）
 config_local.py
 
