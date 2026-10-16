@@ -57,6 +57,25 @@ PACKAGES = {
     "boss": "com.hpbr.bosszhipin",
     "wechat": "com.tencent.mm",
     "qq": "com.tencent.mobileqq",
+    "bili": "tv.danmaku.bili",
+}
+
+# ---------- 选题雷达（Bilibili 采集） ----------
+BILI = {
+    "feed_screens": 8,          # 推荐流翻屏次数
+    "warmup_seconds": 75,       # 采集前预热停留（模拟真人刷一会儿，贴近真实用户行为）
+    "feed_swipe_min": 3.0,      # 翻屏间隔下限（秒）
+    "feed_swipe_max": 8.0,      # 翻屏间隔上限（秒）
+    "ranking_regions": ["科技", "知识"],   # 分区排行目标（P1，找不到跳过）
+    "max_ops": 60,              # 采集会话操作上限
+}
+
+# ---------- LLM（OpenAI 兼容接口，选题雷达日报用） ----------
+# api_key 建议用环境变量 ANDROID_RPA_LLM_KEY 提供，避免明文入库
+LLM = {
+    "base_url": os.environ.get("ANDROID_RPA_LLM_BASE", "https://api.deepseek.com/v1"),
+    "api_key": os.environ.get("ANDROID_RPA_LLM_KEY", ""),
+    "model": os.environ.get("ANDROID_RPA_LLM_MODEL", "deepseek-chat"),
 }
 
 # ---------- 频率控制（风控核心：慢就是快） ----------

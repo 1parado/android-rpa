@@ -3,8 +3,11 @@
 import logging
 import os
 import random
+import re
 import time
 from datetime import datetime
+
+import xml.etree.ElementTree as ET
 
 import config
 from core.control import is_interrupted
@@ -72,7 +75,8 @@ class Robot:
             raise RuntimeError("已达单次会话操作上限，主动停止以保护账号")
 
     # ---------- 查找 ----------
-    def find(self, text=None, rid=None, desc=None, text_contains=None, timeout=8):
+    def find(self, text=None, rid=None, desc=None, text_contains=None,
+             desc_contains=None, timeout=8):
         """按 文本/resource-id/content-desc/模糊文本 查找控件，找不到返回 None"""
         sel = {}
         if text is not None:
@@ -83,6 +87,8 @@ class Robot:
             sel["description"] = desc
         if text_contains is not None:
             sel["textContains"] = text_contains
+        if desc_contains is not None:
+            sel["descriptionContains"] = desc_contains
         el = self.d(**sel)
         if el.wait(timeout=timeout):
             return el
@@ -90,6 +96,29 @@ class Robot:
 
     def exists(self, timeout=1.5, **kw) -> bool:
         return self.find(timeout=timeout, **kw) is not None
+
+    def dump_texts(self):
+        """整屏文本节点批量读取：返回 [(text, bounds_dict), ...]
+        bounds_dict 含 left/top/right/bottom，供按区域/坐标过滤。
+        dump 失败重试 2 次，仍失败返回空列表"""
+        for i in range(3):
+            try:
+                xml = self.d.dump_hierarchy()
+                if xml:
+                    out = []
+                    for n in ET.fromstring(xml).iter("node"):
+                        t = (n.get("text") or "").strip()
+                        m = re.match(
+                            r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", n.get("bounds", ""))
+                        if t and m:
+                            x1, y1, x2, y2 = map(int, m.groups())
+                            out.append((t, {"left": x1, "top": y1,
+                                            "right": x2, "bottom": y2}))
+                    return out
+            except Exception as e:
+                log.warning(f"dump_hierarchy 第{i+1}次失败: {e}")
+                time.sleep(1.5)
+        return []
 
     # ---------- 动作 ----------
     def tap(self, el, label=""):

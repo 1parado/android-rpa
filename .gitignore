@@ -5,6 +5,7 @@ __pycache__/
 
 # 运行产物
 logs/
+data/
 INTERRUPT
 
 # workbuddy 记忆目录（本地隐私数据）

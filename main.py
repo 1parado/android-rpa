@@ -14,7 +14,7 @@ def main():
     setup_logging()
     ap = argparse.ArgumentParser(description="Android RPA 主控")
     ap.add_argument("--task", required=True,
-                    choices=["boss", "wechat"],
+                    choices=["boss", "wechat", "bili"],
                     help="要执行的任务")
     ap.add_argument("--serial", default=None, help="设备序列号（多设备时指定）")
     ap.add_argument("--live", action="store_true",
@@ -23,6 +23,8 @@ def main():
                     help="本轮最多打招呼数量（默认取 config.BOSS.max_greetings）")
     ap.add_argument("--fresh", action="store_true",
                     help="忽略断点续跑状态，从头扫描（boss 任务）")
+    ap.add_argument("--screens", type=int, default=None,
+                    help="推荐流翻屏次数（bili 任务，默认取 config.BILI）")
     args = ap.parse_args()
 
     d = connect(args.serial)
@@ -36,6 +38,9 @@ def main():
         elif args.task == "wechat":
             from apps import wechat
             wechat.run(r)
+        elif args.task == "bili":
+            from apps import bilibili
+            bilibili.run(r, screens=args.screens)
     except Interrupted:
         log.info("⛔ 任务已被人为主动打断（INTERRUPT）。双击 resume_agent.bat 可恢复。")
     except RuntimeError as e:
