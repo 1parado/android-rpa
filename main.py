@@ -21,6 +21,8 @@ def main():
                     help="真实执行操作（默认 dry-run，只找控件不点击）")
     ap.add_argument("--max", type=int, default=None,
                     help="本轮最多打招呼数量（默认取 config.BOSS.max_greetings）")
+    ap.add_argument("--fresh", action="store_true",
+                    help="忽略断点续跑状态，从头扫描（boss 任务）")
     args = ap.parse_args()
 
     d = connect(args.serial)
@@ -30,7 +32,7 @@ def main():
         if args.task == "boss":
             from apps import boss_zhipin
             boss_zhipin.run(r, keywords=config.BOSS.get("job_keywords") or None,
-                            max_greet=args.max)
+                            max_greet=args.max, fresh=args.fresh)
         elif args.task == "wechat":
             from apps import wechat
             wechat.run(r)

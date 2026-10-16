@@ -18,6 +18,7 @@ import time
 import xml.etree.ElementTree as ET
 
 import config
+from core import state as app_state
 from core.actions import Robot, log
 
 PACKAGE = config.PACKAGES["boss"]
@@ -134,8 +135,12 @@ def _ensure_list(r: Robot):
         time.sleep(1.5)
 
 
-def run(r: Robot, keywords: list = None, max_greet: int = None):
-    """按当前页面列表顺序批量打招呼（keywords 参数保留但不再用于筛选）"""
+def run(r: Robot, keywords: list = None, max_greet: int = None, fresh: bool = False):
+    """按当前页面列表顺序批量打招呼（keywords 参数保留但不再用于筛选）
+
+    断点续跑：默认加载 logs/state.json 里的 seen/greeted 跳过已处理职位；
+    正常跑完一轮自动清理状态；--fresh 忽略历史从头扫。
+    """
     max_greet = max_greet or config.BOSS["max_greetings"]
     # 每条投递约 3 步（点击沟通 + 2 次返回）+ 启动/兜底余量
     r.op_budget = max_greet * 4 + 30
@@ -143,8 +148,13 @@ def run(r: Robot, keywords: list = None, max_greet: int = None):
     time.sleep(3)
     _ensure_list(r)   # 可能上次停在公司页/详情页，先回到列表
 
-    seen, done = set(), 0
-    empty = 0
+    state = {"seen": set(), "greeted": set(), "updated_at": time.time()}
+    if not fresh:
+        state = app_state.load()
+        if state["seen"]:
+            log.info(f"断点续跑：跳过历史已处理职位 {len(state['seen'])} 个")
+    seen = state["seen"]
+    done, empty = 0, 0
     while done < max_greet and empty < 3:
         cards = _scan_cards(r, seen)
         if not cards:
@@ -164,13 +174,18 @@ def run(r: Robot, keywords: list = None, max_greet: int = None):
         if result == "ok":
             done += 1
             log.info(f"[OK] 已打招呼 ({done}/{max_greet}): {title}")
+            app_state.record(state, title, greeted=True)
             r.human_delay()
         elif result == "skip":
             log.info(f"跳过已沟通: {title}")
+            app_state.record(state, title, greeted=False)
         elif result in ("fail", "dry"):
+            app_state.record(state, title, greeted=False)
             r.press_back()
             time.sleep(1.5)
         _ensure_list(r)
 
     log.info(f"本轮结束：成功打招呼 {done} 次（处理职位 {len(seen)} 个）")
+    if done >= max_greet or (not r.dry_run and empty >= 3):
+        app_state.clear()
     return done
