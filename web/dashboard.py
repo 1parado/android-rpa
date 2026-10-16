@@ -541,6 +541,8 @@ tbody tr:hover{background:#E4E8E2}
 .num{font-family:var(--mono);font-size:13px;color:var(--teal);white-space:nowrap}
 .num.hot{color:var(--pink);font-weight:700}
 .time{font-family:var(--mono);font-size:12px;color:var(--dim);white-space:nowrap}
+a.bv{font-family:var(--mono);font-size:12px;color:var(--teal);text-decoration:none}
+a.bv:hover{color:var(--pink)}
 .bar{height:4px;background:var(--line);border-radius:2px;margin-top:5px;
   width:110px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--pink);border-radius:2px;
@@ -623,6 +625,10 @@ async function load(){
   const cols = [
     {h:'#', k:'seq', f:x=>String(x._seq).padStart(2,'0')},
     {h:'TITLE', f:x=>esc(x.title)},
+    {h:'TITLE', f:x=>esc(x.title)},
+    ...(rows.some(x=>x.bvid) ? [{h:'BV', k:'num', f:x=>x.bvid
+      ? `<a class="bv" href="https://www.bilibili.com/video/${esc(x.bvid)}" target="_blank" rel="noopener">${esc(x.bvid)}</a>`
+      : '—'}] : []),
     {h:'播放', f:x=>{const p=parseNum(x.play);
       return `${esc(x.play)||'—'}<div class="bar"><i style="width:${Math.round(p/maxPlay*100)}%"></i></div>`}},
     {h:'弹幕', k:'num', f:x=>esc(x.danmaku)||'—'},

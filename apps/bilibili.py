@@ -519,24 +519,40 @@ def collect_up_videos(r: Robot, mid: int, note: str, detail: int = 0,
     for row in rows:
         old = prev.get(row["title"])
         if old:
-            for k in ("play", "danmaku", "pub", "like", "coin", "fav", "comment"):
+            for k in ("play", "danmaku", "pub", "like", "coin", "fav", "comment", "bvid"):
                 if old.get(k) and not row.get(k):
                     row[k] = old[k]
 
-    # 可选：点进最近 N 条采详情（点赞/投币/收藏）——先滚回列表顶部
-    detail = detail if detail is not None else config.BILI.get("up_detail", 0)
-    if detail > 0 and not r.dry_run and rows:
-        need = [row for row in rows[:detail] if not row.get("like")]
+    # 点进全部视频采详情（BV/点赞/投币/收藏/评论数 + 热评）——增量跳过已有数据的
+    detail = detail if detail is not None else len(rows)
+    n_comments = max(1, config.BILI.get("up_comments", 40))
+    if not r.dry_run and rows:
+        need = [row for row in rows[:detail]
+                if not row.get("like") or not row.get("bvid")
+                or (n_comments > 0 and not row.get("top_comments"))]
         if need:
             log.info(f"详情需补采 {len(need)}/{min(detail, len(rows))} 条（其余已有数据，跳过）")
             if _back_to_space(r, mid, note):
-                _collect_details(r, need)
+                _collect_details(r, need, comments=n_comments)
         else:
             log.info("详情数据全部已有，跳过详情页采集")
 
     _save_csv(f"up_{note}", rows,
-              ["seq", "title", "play", "danmaku", "pub",
-               "like", "coin", "fav", "comment", "collected_at"])
+              ["seq", "title", "play", "danmaku", "pub", "bvid",
+               "like", "coin", "fav", "comment", "top_comments",
+               "collected_at"])
+    # 热评明细单独存一份 JSON（CSV 单元格放不下）：data/bili_radar/up_comments_{note}_{day}.json
+    with_c = [x for x in rows if x.get("top_comments")]
+    if with_c:
+        cpath = os.path.join(DATA_DIR, f"up_comments_{note}_{datetime.now().strftime('%Y%m%d')}.json")
+        try:
+            old = json.load(open(cpath, encoding="utf-8")) if os.path.isfile(cpath) else {}
+        except (OSError, json.JSONDecodeError):
+            old = {}
+        old.update({x["bvid"] or x["title"]: {"title": x["title"], "bvid": x.get("bvid", ""),
+                                              "comments": x["top_comments"]} for x in with_c})
+        json.dump(old, open(cpath, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        log.info(f"热评明细已写入 {os.path.basename(cpath)}（{len(old)} 个视频）")
     log.info(f"UP「{note}」采集 {len(rows)} 条")
     return {"up": note, "mid": mid, "rows": rows}
 
@@ -566,10 +582,11 @@ def _back_to_space(r: Robot, mid: int, note: str):
     return "authorspace" in r.d.app_current()["activity"].lower()
 
 
-def _collect_details(r: Robot, rows: list):
-    """点进视频详情页补采点赞/投币/收藏/评论数。
+def _collect_details(r: Robot, rows: list, comments: int = 0):
+    """点进视频详情页补采 BV号/点赞/投币/收藏/评论数（+可选评论内容）。
     底栏操作区是图标按钮、数字在图标下方且无文字标签（实测 dump）：
     同一 y 行（±8px）内按 x 排序依次为 赞 / [不喜欢=文本] / 币 / 藏 / 分享。
+    BV 号在「展开更多」展开后的简介文本里（实测 BV1t6ex66EKs）。
     评论数在顶部「评论」tab 标签右侧（实测 top≈782, left≈426）。"""
     log.info(f"进入详情页补采 {len(rows)} 条（可见卡片采完后自动下滑列表继续找）...")
     pending = list(rows)
@@ -619,9 +636,60 @@ def _collect_details(r: Robot, rows: list):
             row["like"], row["coin"], row["fav"] = nums[0], nums[-3], nums[-2]
         elif len(nums) == 3:
             row["like"], row["coin"], row["fav"] = nums
-        log.info(f"详情 {row['seq']}: 赞={row.get('like','?')} 币={row.get('coin','?')} "
-                 f"藏={row.get('fav','?')} 评={row.get('comment','?')}")
+        # BV 号：简介区「展开更多」→ 展开后的文本里含 BVxxxxxxxxxx
+        if r.d(descriptionContains="展开更多").click_exists():
+            time.sleep(1.5)
+            nodes = r.dump_texts()
+        for t, b in nodes:
+            m = re.search(r"BV[0-9A-Za-z]{10}", t)
+            if m:
+                row["bvid"] = m.group(0)
+                break
+        log.info(f"详情 {row['seq']}: BV={row.get('bvid','?')} 赞={row.get('like','?')} "
+                 f"币={row.get('coin','?')} 藏={row.get('fav','?')} 评={row.get('comment','?')}")
+        # 可选：采热评（B站默认按热度排，前 N 条即高价值评论）
+        if comments > 0 and not r.dry_run:
+            _collect_comments(r, row, comments)
         _back_to_list(r, times=1)
+
+
+def _collect_comments(r: Robot, row: dict, limit: int):
+    """采集当前视频的热门评论。评论流结构（实测 dump）：
+    评论正文 → 点赞数 / 用户名「9月16日 IP属地：X」/「xxx: 回复」/「共N条回复」。
+    只采顶层热评不展开回复，数量用 limit 封顶（热评排序下前 N 条即最有价值）。"""
+    if not r.d(text="评论").click_exists():
+        return
+    time.sleep(2)
+    r.d.swipe(540, 1400, 540, 900, duration=0.3)   # 小滑进入评论流
+    time.sleep(2)
+    got, seen = [], set()
+    max_screens = max(1, limit // 15)   # 每屏约 15 条，封顶滑动次数
+    for _ in range(max_screens):
+        for t, b in r.dump_texts():
+            flat = t.replace("​", "").strip()   # 去零宽字符
+            if t in seen or len(flat) < 4 or _parse_num(flat):
+                continue
+            if "IP属地" in t or "共" in t and "回复" in t or t in ("简介", "评论"):
+                continue
+            if ": " in t or "：回复" in t or "顶部" in t or "置顶" in t:
+                continue
+            if "回复" in t:
+                continue
+            # 过滤纯计数/时间串（含带换行的 "19.3\nK/s" 网速指示器）
+            if re.fullmatch(r"[\d\s.:/%万千亿KkSs+-]+", flat):
+                continue
+            if len(t) >= 6:   # 评论正文一般较长（过滤时间/计数等短串）
+                seen.add(t)
+                got.append(t)
+        if len(got) >= limit:
+            break
+        act = r.d.app_current()["activity"].lower()
+        if "unitedbizdetails" not in act:   # 已离开详情页
+            break
+        r.d.swipe(540, 1700, 540, 800, duration=0.4)   # 翻下一屏评论
+        time.sleep(2)
+    row["top_comments"] = got[:limit]
+    log.info(f"  评论 {row['seq']}: 采到 {len(got[:limit])} 条热评")
 
 
 def run_up(r: Robot, up_names: list = None, detail: int = None,
