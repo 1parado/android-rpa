@@ -71,6 +71,30 @@ adb shell rm /data/local/tmp/u2.jar
 
 > 老教程里的 `atx-agent`（Go 常驻代理）是 uiautomator2 v2.x 的机制，v3 已移除，本项目不依赖。
 
+## 实时屏幕预览 / 投屏
+
+两种方式按需选：
+
+| 方式 | 启动 | 帧率 | 用途 |
+|---|---|---|---|
+| 浏览器预览（内置） | `python web/screen.py` | 2-3fps | 盯一眼手机当前画面，零额外依赖 |
+| scrcpy 投屏（可选） | `python web/screen.py --mirror` | 60fps | 高帧率观察动画/滑动，需装 scrcpy |
+
+**浏览器预览**：纯 Python + adb，启动后打开 `http://127.0.0.1:8766`，
+只读不写、不干扰 RPA 任务；浏览器关掉页面采集自动停止。磁盘占用为 0（帧在内存里流转）。
+常用参数：`--port 9001` 换端口、`--fps 5` 提高刷新率、`--serial xxx` 指定设备。
+
+**scrcpy 投屏**：`--mirror` 会自动找 scrcpy 并拉起独立投屏窗口（60fps、可直接鼠标操作手机），
+找不到时会打印下载地址和配置方法。安装任选其一：
+
+1. 从 [scrcpy releases](https://github.com/Genymobile/scrcpy/releases) 下载 zip，
+   解压到 `%LOCALAPPDATA%\scrcpy\`（自动识别）
+2. 或解压到任意位置后设置环境变量 `ANDROID_RPA_SCRCPY` 指向 `scrcpy.exe`
+3. 或把 scrcpy.exe 所在目录加入 `PATH`
+
+> scrcpy 是独立软件，不装它只用浏览器预览即可，不影响本项目其他功能。
+> 无线设备同样支持：`adb connect 手机IP:端口` 后，`--serial 手机IP:端口`。
+
 ## MCP：让 Agent 直接看屏 + 操作手机
 
 本项目内置 stdio MCP Server（`mcp_server.py`），任何支持 MCP 的客户端

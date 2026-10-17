@@ -38,6 +38,29 @@ def _find_adb() -> str:
 # adb 可执行文件路径（自动发现，特殊环境可用环境变量 ANDROID_RPA_ADB 覆盖）
 ADB_PATH = _find_adb()
 
+
+def _find_scrcpy() -> str:
+    """按 环境变量 > PATH > 常见位置 自动发现 scrcpy（可选，用于高帧率投屏）"""
+    env = os.environ.get("ANDROID_RPA_SCRCPY")
+    if env and os.path.isfile(env):
+        return env
+    found = shutil.which("scrcpy")
+    if found:
+        return found
+    for p in (
+        os.path.expandvars(r"%LOCALAPPDATA%\scrcpy\scrcpy.exe"),
+        "/usr/bin/scrcpy",
+        "/usr/local/bin/scrcpy",
+        "/opt/homebrew/bin/scrcpy",
+    ):
+        if os.path.isfile(p):
+            return p
+    return ""
+
+
+# scrcpy 可执行文件路径（可选，找不到为空字符串；用于 --mirror 高帧率投屏）
+SCRCPY_PATH = _find_scrcpy()
+
 # 设备序列号：留空 = 自动连接唯一已连接设备；多设备时填 adb devices 里的序列号
 # （也可用环境变量 ANDROID_RPA_SERIAL 覆盖，无需改代码）
 DEVICE_SERIAL = os.environ.get("ANDROID_RPA_SERIAL", "")
